@@ -1,5 +1,7 @@
 from bitmex import bitmex
 import requests, json
+import pytz
+
 
 # IMPORTS
 import pytz # $ pip install pytz
@@ -24,10 +26,7 @@ bitmex_client = bitmex(test=True, api_key=bitmex_api_key, api_secret=bitmex_api_
 
 ### FUNCTIONS
 def minutes_of_new_data(symbol, kline_size, start_time, end_time, data, source):
-    print("symb",symbol)
-    print("kline",kline_size)
-    print("endtime",end_time)
-    print("startime",start_time)
+
     if len(data) > 0:  old = parser.parse(data["timestamp"].iloc[-1])
     elif source == "binance":
         if start_time == None:
@@ -39,18 +38,18 @@ def minutes_of_new_data(symbol, kline_size, start_time, end_time, data, source):
         if start_time == None:
             old = bitmex_client.Trade.Trade_getBucketed(symbol=symbol, binSize=kline_size, count=1, reverse=False).result()[0][0]['timestamp']
         else:
-            old = datetime.strptime(start_time, '%Y%m%d%H%M%S%f')
+            old = datetime.strptime(start_time, '%d %b %Y')
     if source == "binance": 
         if end_time == 'PRESENT':
             new = pd.to_datetime(binance_client.get_klines(symbol=symbol, interval=kline_size)[-1][0], unit='ms')
         else:
-            new = datetime.strptime(end_time, '%Y%m%d%H%M%S%f')
+            new = datetime.strptime(end_time, '%d %b %Y')
     if source == "bitmex":
-        print("2nd comment")
         if end_time == 'PRESENT':
             new = bitmex_client.Trade.Trade_getBucketed(symbol=symbol, binSize=kline_size, count=1, reverse=True).result()[0][0]['timestamp']
+            new = new.replace(tzinfo=None)
         else:
-            new = datetime.strptime(end_time, '%Y%m%d%H%M%S%f')
+            new = datetime.strptime(end_time, '%d %b %Y')
             print(new)
     return old, new
 
@@ -59,11 +58,12 @@ def get_all_bitmex(symbol, kline_size, start_time, end_time, save = False):
     if os.path.isfile(filename): data_df = pd.read_csv(filename)
     else: data_df = pd.DataFrame()
     #if(oldest_point == None):
+    print("This is start time:",start_time)
+    print("This is end time ",end_time)
     oldest_point, newest_point = minutes_of_new_data(symbol,kline_size, start_time, end_time,  data_df, source = "bitmex")
     print("This is oldest point:",oldest_point)
 
-    print("NEWEST_POINT",newest_point)
-    print("OLDEST_POINT",oldest_point)
+    print("This is newest point",newest_point)
     delta_min = (newest_point - oldest_point).total_seconds()/60
     available_data = math.ceil(delta_min/binsizes[kline_size])
     rounds = math.ceil(available_data / batch_size)
@@ -89,7 +89,7 @@ dt_str = "5/30/2020 4:05:03:10:10"
 #est_time = pytz.timezone('US/Eastern').localize(unaware_est, is_dst=None)
 
 #Get timeseries data
-data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time=dt_str, end_time='PRESENT', save=True)
+data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time='1 Jan 2017', end_time='PRESENT', save=True)
 print(data)
 
 #Price data is just public.
