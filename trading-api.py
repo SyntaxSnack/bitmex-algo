@@ -82,25 +82,7 @@ def get_all_bitmex(symbol, kline_size, start_time, end_time, save = False):
             data = bitmex_client.Trade.Trade_getBucketed(symbol=symbol, binSize=kline_size, count=r[1] - r[0], startTime = start, endTime = end).result()[0]
             temp_df = pd.DataFrame(data)
             data_df = data_df.append(temp_df)
-    #delta_min = (newest_point - oldest_point).total_seconds()/60
-   # available_data = math.ceil(delta_min/binsizes[kline_size])
-    #print("available",available_data)
-    #rounds = math.ceil(available_data / batch_size)
 
-    #data = bitmex_client.Trade.Trade_getBucketed(symbol=symbol, binSize=kline_size, count=count_minutes, startTime = oldest_point, endTime = newest_point).result()[0]
-
-   #    print(d)
-
-    '''if rounds > 0:
-        print('Downloading %d minutes of new data available for %s, i.e. %d instances of %s data in %d rounds.' % (delta_min, symbol, available_data, kline_size, rounds))
-        for round_num in tqdm_notebook(range(rounds)):
-            time.sleep(1)
-            new_time = (oldest_point + timedelta(minutes = round_num * batch_size * binsizes[kline_size]))
-            print(new_time)
-            data = bitmex_client.Trade.Trade_getBucketed(symbol=symbol, binSize=kline_size, count=batch_size, startTime = new_time).result()[0]
-            temp_df = pd.DataFrame(data)
-            data_df = data_df.append(temp_df)
-            '''
     data_df.set_index('timestamp', inplace=True)
     if save : data_df.to_csv(filename)
     print('All caught up..!')
