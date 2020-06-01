@@ -73,6 +73,7 @@ def get_all_bitmex(symbol, kline_size, start_time, end_time, save = False):
         else: ranges.append([i, i+999])
     #MAXIMUM count is 1000 so we need to loop until we hit the value, adding 1000
     print(ranges)
+    # We can only get 1000 values at a time, so we go from newest to oldest point by intervals of 1000 or less
     for r in ranges:
             start = oldest_point + timedelta(minutes=r[0])
             end = oldest_point + timedelta(minutes=r[1])
