@@ -1,11 +1,11 @@
-from bitmex import bitmex
-import requests, json
-import pytz
-
+#!/usr/bin/env python
 
 # IMPORTS
-import pytz # $ pip install pytz
 import pandas as pd
+from bitmex import bitmex
+import requests, json
+import pytz # $ pip install pytz
+from dotenv import load_dotenv
 import math
 import os.path
 import time
@@ -13,16 +13,11 @@ from datetime import timedelta, datetime
 from dateutil import parser
 from tqdm import tqdm_notebook #(Optional, used for progress-bars)
 
+#load constants
+load_dotenv()
 
-
-### API
-bitmex_api_key = 'tZzFtVRt9SHzcsIKeLZpckt3'
-bitmex_api_secret = 'G8Ln9_0mC3wvD_lE61Yji_wDByxkjuv2scKRJgRu06-2lv50'
-
-### CONSTANTS
-binsizes = {"1m": 1, "5m": 5, "1h": 60, "1d": 1440}
-batch_size = 750
-bitmex_client = bitmex(test=True, api_key=bitmex_api_key, api_secret=bitmex_api_secret)
+#create the bitmex client object
+bitmex_client = bitmex(test=os.getenv("TESTNET"), api_key=os.getenv("bitmex_api_key"), api_secret=os.getenv("bitmex_api_secret"))
 
 #converts start_time and end_time to datetime objects
 def get_datetimes(symbol, kline_size, start_time, end_time, data, source):
@@ -64,7 +59,8 @@ def get_all_bitmex(symbol, kline_size, start_time, end_time, save = False):
     oldest_point, newest_point = get_datetimes(symbol,kline_size, start_time, end_time,  data_df, source = "bitmex")
     print("getting data from", oldest_point, " to ", newest_point)
     count_minutes = int(divmod((newest_point - oldest_point).total_seconds(),60)[0])
-    
+    print("COUNT_MINUTES",count_minutes)
+
     print("count minutes", range(count_minutes))
     ranges = []
     for i in range(0,count_minutes,1000):
@@ -107,8 +103,6 @@ ether_bid_price = ether[1]['price']
 print(ether_ask_price)
 print(ether_bid_price)
 
-
-client = bitmex.bitmex(test=True, api_key=bitmex_api_key, api_secret=bitmex_api_secret)
 #I think this only works for certain kinds of requests (like those listed here - https://testnet.bitmex.com/api/explorer/)
 #GET /orderBook/L2
 
@@ -120,9 +114,9 @@ symbol = 'ETHUSD'
 qty = -1
 price = ether[1]['price']
 
-order_result = client.Order.Order_new(symbol=symbol, orderQty=qty, price=price).result()
+order_result = bitmex_client.Order.Order_new(symbol=symbol, orderQty=qty, price=price).result()
 print(order_result)
-orders = client.Order.Order_getOrders().result()[0]
+orders = bitmex_client.Order.Order_getOrders().result()[0]
 
 for order in orders:
    print(order)
@@ -136,4 +130,3 @@ for order in orders:
 #https://testnet.bitmex.com/api/v1/orderBook/L2?symbol=XBT
 
 #Next step is to try creating orders
-
