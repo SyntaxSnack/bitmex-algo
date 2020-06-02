@@ -7,11 +7,15 @@ class Signal(Enum):
     BUY = 1
     SELL = 2
 
+XBTUSD = .5
+ETHUSD = .05
+
 #VARIABLES AND DATA
-candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
-candle = pd.Series(dtype=object)
+#candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
+#candle = pd.Series(dtype=object)
     
-def candleseries(candleamount):
+def candle_df(candles, candleamount):
+    candle_data = pd.DataFrame(columns=['open', 'close', 'candle size', 'type'])
     # iterate over rows with iterrows()
     for index, data in candles.head(candleamount).iterrows():
         #determine if candles are of opposite type
@@ -22,36 +26,34 @@ def candleseries(candleamount):
         else:
             type = "abs_doji"
      #append size
-        size = [data['open'], data['close'], abs(data['open']-data['close']), type]
-        candle.at[index] = size
+        candle_data.loc[index] = [data['open'], data['close'], abs(data['open']-data['close']), type]
+    print("CANDLE DATA", candle_data)
+    return candle_data
 
 #realtime func
-def engulfingsignals(candle_idx = -1, candleamount = 1440, threshold = 1, ignoredoji = False):
-    print("CANDLE",candle)
-    if candle.iloc[candle_idx][2] == candle.iloc[candle_idx-1][2]:
+def engulfingsignals(curr_row, prev_row, candleamount = 1440, threshold = 1, ignoredoji = False):
+    if curr_row[3] == prev_row[3]: #candle type stays the same
         return Signal.WAIT
-    elif (candle.iloc[candle_idx][2] * threshold) > (candle.iloc[candle_idx-1][2]) and (ignoredoji == False or candle.iloc[candle_idx-1][2] > 1):
-        if candle.iloc[candle_idx][3] == "red":
+    elif (curr_row[2] * threshold) > (prev_row[2]) and (ignoredoji == False or prev_row[2] > XBTUSD): # candle is opposite direction and larger
+        if curr_row[3] == "red":
             return Signal.SELL
-        elif candle.iloc[candle_idx][3] == "green":
+        elif curr_row[3] == "green":
             return Signal.BUY
         else: return Signal.WAIT
     else:
         return Signal.WAIT
 
 #back-test on the series extrapolated from price data
-def testengulf(candleamount, threshold=1, ignoredoji=False):
+def testengulf(candles, candleamount, threshold=1, ignoredoji=False):
     #first generate a candle-series!
-    candleseries(candleamount)
-    #generate index series for all candles except for the oldest one (no prev candle for it!)
-    cseries = iter(candle.index[::-1])
-    next(cseries)
-    #list to store signals in for easier display
+    candle_data = candle_df(candles, candleamount)
+
     signals=[]
     #generate a trade signal for every candle except for the last, and store in the list we created
-    for i in cseries:
-        i = -1*(i)
-        signals.append(engulfingsignals(i, candleamount, threshold, ignoredoji))
+    prev_row = candle_data.iloc[1]
+    for i,row in candle_data.iloc[1:].iterrows():
+        signals.append(engulfingsignals(row, prev_row, candleamount, threshold, ignoredoji))
+        prev_row = row
     return(signals)
 
 #run the back-test function
@@ -59,26 +61,34 @@ def testengulf(candleamount, threshold=1, ignoredoji=False):
 #D=0: including DOJIs in back-test data
 #D=1: excluding DOJIs in back-test data
 #D=2: both inc and exc in back-test data
-def engulfdata(candleamount=1440, thresholds=[.1,.25,.5, 1], D=2):
+min_in_day = 1440
+def engulfdata(candleamount=min_in_day, thresholds=[.1,.25,.5, 1], D=2):
     btdata = pd.DataFrame()
-    if D==0 or D==2:    
-        btdata[candleamount, thresholds[0], "ND"] = testengulf(candleamount, thresholds[0])
-        btdata[candleamount, thresholds[1], "ND"] = testengulf(candleamount, thresholds[1])
-        btdata[candleamount, thresholds[2], "ND"] = testengulf(candleamount, thresholds[2])
-        btdata[candleamount, thresholds[3], "ND"] = testengulf(candleamount, thresholds[3])
+    candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
+    #candles =  candles.iloc[:1000]
+    
+    if D==0 or D==2:
+        print(testengulf(candles, candleamount, thresholds[0]))    
+        btdata[candleamount, thresholds[0], "ND"] = testengulf(candles, candleamount, thresholds[0])
+        btdata[candleamount, thresholds[1], "ND"] = testengulf(candles, candleamount, thresholds[1])
+        btdata[candleamount, thresholds[2], "ND"] = testengulf(candles, candleamount, thresholds[2])
+        btdata[candleamount, thresholds[3], "ND"] = testengulf(candles, candleamount, thresholds[3])
+    
     if D==1 or D==2:
-        btdata[candleamount, thresholds[0], "D"] = testengulf(candleamount, thresholds[0], True)
-        btdata[candleamount, thresholds[1], "D"] = testengulf(candleamount, thresholds[1], True)
-        btdata[candleamount, thresholds[2], "D"] = testengulf(candleamount, thresholds[2], True)
-        btdata[candleamount, thresholds[3], "D"] = testengulf(candleamount, thresholds[3], True)
+        btdata[candleamount, thresholds[0], "D"] = testengulf(candles, candleamount, thresholds[0], True)
+        btdata[candleamount, thresholds[1], "D"] = testengulf(candles, candleamount, thresholds[1], True)
+        btdata[candleamount, thresholds[2], "D"] = testengulf(candles, candleamount, thresholds[2], True)
+        btdata[candleamount, thresholds[3], "D"] = testengulf(candles, candleamount, thresholds[3], True)
+        
     return(btdata)
 
 #print the responses to the first 50 candlesticks, excluding 0 (WAIT) indicators (for the sake of visibility)
 emask = pd.DataFrame(engulfdata() == 0)
-edata = pd.DataFrame(engulfdata())[~emask].dropna(how='all')
-engulfdata(candleamount=1440, thresholds=[.1,.25,.5, 1], D=2)
-print("# of signals: ",len(edata))
-edata[~emask].dropna(how='all')
+edata = pd.DataFrame(engulfdata())[~emask].dropna(how='all')  
+btdata = engulfdata(candleamount=1440, thresholds=[.1,.25,.5, 1], D=2)
+print('BTDATA', btdata)
+#print("# of signals: ",len(edata))
+#edata[~emask].dropna(how='all')
 
 
 #Here we're going to create a dataframe containing all the indicators from the TA library!
