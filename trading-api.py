@@ -53,6 +53,7 @@ def get_datetimes(symbol, kline_size, start_time, end_time, data, source):
 
 def get_all_bitmex(symbol, kline_size, start_time, end_time, save = False):
     filename = '%s-%s-data.csv' % (symbol, kline_size)
+    print(filename)
     if os.path.isfile(filename): data_df = pd.read_csv(filename)
     else: data_df = pd.DataFrame()
 
@@ -92,7 +93,8 @@ dt_str = "5/30/2020 4:05:03:10:10"
 #est_time = pytz.timezone('US/Eastern').localize(unaware_est, is_dst=None)
 
 #Get timeseries data
-data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time='29 May 2020', end_time='PRESENT', save=True)
+#data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time='29 May 2020', end_time='PRESENT', save=True)
+data = get_all_bitmex(symbol="ETHUSD", kline_size="1m", start_time='29 May 2019', end_time='PRESENT', save=True)
 print(data)
 
 #Price data is just public.

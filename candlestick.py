@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
-
+from collections import Counter
 from enum import Enum
+import ta
+from ta.utils import dropna
+import sys
+
 class Signal(Enum):
     WAIT = 0
     BUY = 1
@@ -11,9 +15,6 @@ XBTUSD = .5
 ETHUSD = .05
 MIN_IN_DAY = 1440
 
-#VARIABLES AND DATA
-#candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
-#candle = pd.Series(dtype=object)
     
 def candle_df(candles, candleamount):
     candle_data = pd.DataFrame(columns=['open', 'close','high', 'low', 'candle size', 'type'])
@@ -28,17 +29,18 @@ def candle_df(candles, candleamount):
             type = "abs_doji"
      #append size
         candle_data.loc[index] = [data['open'], data['close'],data['high'], data['low'], abs(data['open']-data['close']), type]
-    print("CANDLE DATA", candle_data)
     return candle_data
 
 #realtime func
-def engulfingsignals(curr_row, prev_row, candleamount = 1440, threshold = 1, ignoredoji = False):
-    if curr_row[3] == prev_row[3]: #candle type stays the same
+def engulfingsignals(curr_row, prev_row, threshold = 1, ignoredoji = False):
+    if curr_row['type'] == prev_row['type']: #candle type stays the same
         return Signal.WAIT
-    elif (curr_row[2] * threshold) > (prev_row[2]) and (ignoredoji == False or prev_row[2] > XBTUSD): # candle is opposite direction and larger
-        if curr_row[3] == "red":
+    elif (curr_row['candle size'] * threshold) > (prev_row['candle size']) and (ignoredoji == False or prev_row['candle size'] > XBTUSD): # candle is opposite direction and larger
+        if curr_row['type'] == "red":
+           # print("SELLLLL")
             return Signal.SELL
-        elif curr_row[3] == "green":
+        elif curr_row['type'] == "green":
+           # print("BUUYYYYY")
             return Signal.BUY
         else: return Signal.WAIT
     else:
@@ -53,122 +55,156 @@ def keltnersignals(row):
     else:
         return Signal.WAIT
 
+def atrseries(candles, period=10, fillna=True):
+    atr = ta.volatility.AverageTrueRange(candles["high"], candles["low"], candles["close"], n=period, fillna=fillna)
+    series = pd.Series()
+    series = atr.average_true_range()
+    return(series)
+
 #back-test on the series extrapolated from price data
 def get_engulf_signals(candles, candleamount = MIN_IN_DAY, threshold=1, ignoredoji=False):
     #first generate a candle-series!
-    signals=[]
+    candles = candle_df(candles, candleamount)
+    signals=[Signal.WAIT]
     #generate a trade signal for every candle except for the last, and store in the list we created
-    prev_row = candles.iloc[1]
-    for i,row in candles.iloc[1:].iterrows():
-        signals.append(engulfingsignals(row, prev_row, candleamount, threshold, ignoredoji))
+    prev_row = candles.iloc[0]
+    for i,row in candles.head(candleamount).iloc[1:].iterrows():
+        signals.append(engulfingsignals(row, prev_row, threshold, ignoredoji))
         prev_row = row
     return signals
 
 
-def get_keltner_signals(candles, candleamount = MIN_IN_DAY, threshold = 1, ignoredoji = False):
-    indicator_kelt = ta.volatility.KeltnerChannel(high=candles["high"], low=candles["low"], close=candles["close"], n=10, fillna=True)
+
+def get_keltner_signals(candles, candleamount = MIN_IN_DAY, ma=10, threshold = 1, ignoredoji = False, sma=True):
+    indicator_kelt = ta.volatility.KeltnerChannel(high=candles["high"], low=candles["low"], close=candles["close"], n=ma, fillna=True, ov=sma)
     kseries = pd.DataFrame(columns=['hband', 'lband'])
     # Add Bollinger Bands features
     kseries["hband"] = indicator_kelt.keltner_channel_hband_indicator()
     kseries["lband"] = indicator_kelt.keltner_channel_lband_indicator()
     signals=[]
 
-    for i,row in kseries.iterrows():
+    for i,row in kseries.head(candleamount).iterrows():
         signals.append(keltnersignals(row))
     return signals
     
-#run the back-test function
-#store into data-frame to compare w/ different engulf parameters
-#D=0: including DOJIs in back-test data
-#D=1: excluding DOJIs in back-test data
-#D=2: both inc and exc in back-test data
-def engulfdata(candleamount= MIN_IN_DAY, thresholds=[.1,.25,.5, 1], D=2):
-    btdata = pd.DataFrame()
-    candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
-    candle_data = candle_df(candles, candleamount)
 
-    #candles =  candles.iloc[:1000]
-    
-    if D==0 or D==2:
-        print(get_engulf_signals(candle_data, candleamount, thresholds[0]))    
-        btdata[candleamount, thresholds[0], "ND"] = get_engulf_signals(candle_data, candleamount, thresholds[0])
-        btdata[candleamount, thresholds[1], "ND"] = get_engulf_signals(candle_data, candleamount, thresholds[1])
-        btdata[candleamount, thresholds[2], "ND"] = get_engulf_signals(candle_data, candleamount, thresholds[2])
-        btdata[candleamount, thresholds[3], "ND"] = get_engulf_signals(candle_data, candleamount, thresholds[3])
-    
-    if D==1 or D==2:
-        btdata[candleamount, thresholds[0], "D"] = get_engulf_signals(candle_data, candleamount, thresholds[0], True)
-        btdata[candleamount, thresholds[1], "D"] = get_engulf_signals(candle_data, candleamount, thresholds[1], True)
-        btdata[candleamount, thresholds[2], "D"] = get_engulf_signals(candle_data, candleamount, thresholds[2], True)
-        btdata[candleamount, thresholds[3], "D"] = get_engulf_signals(candle_data, candleamount, thresholds[3], True)
-        
-    return(btdata)
+def backtest_strategy(candles, candleamount = MIN_IN_DAY, signals_to_use = {}, capital = 100, trade="dynamic"): #trade= long, short, dynamic
+    signals = pd.DataFrame()
+    if(signals_to_use['keltner'] == True):
+       signals['keltner'] = get_keltner_signals(candles, candleamount=candleamount, ma=40, sma=True)
+       #print("KELTNER SIGNALS", signals.groupby('keltner'))
 
-#print the responses to the first 50 candlesticks, excluding 0 (WAIT) indicators (for the sake of visibility)
-#emask = pd.DataFrame(engulfdata() == 0)
-#edata = pd.DataFrame(engulfdata())[~emask].dropna(how='all')  
-#btdata = engulfdata(candleamount=1440, thresholds=[.1,.25,.5, 1], D=2)
-#print('BTDATA', btdata)
-#print("# of signals: ",len(edata))
-#edata[~emask].dropna(how='all')
+    if(signals_to_use['engulf'] == True):
+        signals['engulf'] = get_engulf_signals(candles, candleamount=candleamount)
 
+    capital = 1000
+    entry_price = 0
+    profit = 0
+    signals.to_csv('signals')
+    position_size = 1
+    position_amount = capital * position_size
+    static_position_amount = capital * position_size
+    fee = position_amount * 0.00075
+    have_pos = False
+    stop_loss = .1
+    stop=False
+    atr=atrseries(candles, period=30)
+    stopPrice=0
+    stopType="atr"
+    for idx, data in signals.head(candleamount).iterrows():
+        if(trade=="dynamic"): #write an algo for this later
+            long=True
+            short=True
+        elif(trade=="long"):
+            long=True
+            short=False
+        elif(trade=="short"):
+            long=False
+            short=True
+        if (entry_price != 0 and stopPrice != 0):
+            if(((position_amount > 0) and (candles.loc[idx,'open'] < stopPrice)) or (((position_amount < 0)) and (candles.loc[idx,'open'] > stopPrice))):
+                stop=True
+                print("!!!!!! STOP PRICE HIT !!!!!!")
+                print("ATR stop threshold: ",atr[idx-1]*50)
+        if((all([v == Signal.BUY for v in data])) or (stop and position_amount < 0)):
+            if((short and have_pos) and (position_amount < 0)):
+            #short is only a constant parameter to determine if we are shorting at all
+            #position_amount determines if we are currently short or long
+                profit = position_amount * ((candles.loc[idx,'open'] - entry_price)/entry_price)
+                capital += profit
+                capital -= fee
+                position_amount = 0
+                print("######## SHORT EXIT ########")
+                print("Exit price:", candles.loc[idx,'open'])
+                print("Turnover:", profit - fee*2)
+                print("############################")
+                #100 * (200-400/400) = 100
+                entry_price = 0
+                have_pos = False
+                stop = False
+            elif(candles.loc[idx+1,'open'] > entry_price):
+                entry_price = candles.loc[idx+1,'open']
+                if(stopType == "atr"): #and if we already have a position, our stop moves up to reflect second entry
+                    stopPrice = entry_price - atr[idx]*50
+                elif(stopType == "perc"):
+                    stopPrice = entry_price * (1-stop_loss)
+                if(have_pos == False):
+                    position_amount = static_position_amount
+                else:
+                    position_amount += static_position_amount #we only get up to this point if our position is positive
+                fee = position_amount*0.00075
+                capital -= fee
+                print("######## LONG ENTRY ########")
+                print("Entry price:", entry_price)
+                print("Stop loss:", stopPrice)
+                print("Current position:", position_amount)
+                print("############################")
+                have_pos = True
+                print(position_amount)
+        elif(all([v == Signal.SELL for v in data]) or (stop and position_amount > 0)):
+            if((long and have_pos) and (position_amount > 0)):
+                profit = position_amount * ((candles.loc[idx,'open'] - entry_price)/entry_price)
+                capital += profit
+                capital -= fee
+                position_amount = 0
+                print("######### LONG EXIT ########")
+                print("Exit price:", candles.loc[idx,'open'])
+                print("Turnover:", profit - fee*2)
+                print("############################")
+                #100 * (200-400/400) = 100
+                entry_price = 0
+                have_pos = False
+                stop = False
+            elif(short and ((candles.loc[idx+1,'open'] < entry_price) or entry_price==0)): #only add to position if original position is in profit!
+                entry_price =  candles.loc[idx+1,'open']
+                if(stopType == "atr"):
+                    stopPrice = entry_price + atr[idx]*50
+                elif(stopType == "perc"):
+                    stopPrice = entry_price * (1+stop_loss)
+                if(have_pos == False):
+                    position_amount = -1*static_position_amount
+                else:
+                    position_amount -= static_position_amount #we only get up to this point if our position is negative
+                print("####### SHORT ENTRY ########")
+                print("Entry price:", entry_price)
+                print("Stop loss:", stopPrice)
+                print("Current position:", position_amount)
+                print("############################")
+                have_pos = True
+                fee = abs(position_amount*0.00075)
+                capital -= fee
 
-#Here we're going to create a dataframe containing all the indicators from the TA library!
+    print('\n---------------------------')
+    print('---- BACKTEST COMPLETE ----')
+    print("Backtest time:", candleamount/1440, "days")
+    print("Final capital:", capital)
+    print("Total profit:", capital-1000)
+    print('---------------------------')
+    #for i in candles.head(candleamount).iterrows():
+    return signals
 
-#TECHNICAL ANALYSIS INDICATORS | https://github.com/bukosabino/ta | 
-import ta
-from ta.utils import dropna
-# Clean NaN values
-#df = ta.utils.dropna(candles)
-
-# Initialize Keltner Bands Indicator
-#indicator_kelt = ta.volatility.KeltnerChannel(high=df["high"], low=df["low"], close=df["close"], n=10, fillna=True)
-
-#kseries = pd.Series(dtype=object)
-
-#kseries = pd.DataFrame()
-# Add Bollinger Bands features
-#kseries["hband"] = indicator_kelt.keltner_channel_hband_indicator()
-#kseries["lband"] = indicator_kelt.keltner_channel_lband_indicator()
-
-
-   
-
-
-
-#back-test on the series extrapolated from price data
-'''def keltnertest(candleamount = 1440, threshold = 1, ignoredoji = False):
-    ksignals=[]
-    for i in candle.index[::-1]:
-        engulfsignal = engulfingsignals(i, candleamount, threshold, ignoredoji)
-        ksignals.append(keltnersignals(i, engulfsignal))
-    return(ksignals)
-
-'''
-
-def backtest_strategy(candleamount = 1440, thresholds = [.1,.25,.5, 1]):
- pass
-
-
-def keltnerdata(candleamount=1440, thresholds=[.1,.25,.5, 1], D=2):
-    btdata = pd.DataFrame()
-    candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
-    candle_data = candle_df(candles, candleamount)
-    if D==0 or D==2:    
-        btdata[candleamount, thresholds[0], "ND"] = pd.Series(get_keltner_signals(candle_data,candleamount, thresholds[0]))
-        btdata[candleamount, thresholds[1], "ND"] = pd.Series(get_keltner_signals(candle_data, candleamount, thresholds[1]))
-        btdata[candleamount, thresholds[2], "ND"] = pd.Series(get_keltner_signals(candle_data, candleamount, thresholds[2]))
-        btdata[candleamount, thresholds[3], "ND"] = pd.Series(get_keltner_signals(candle_data, candleamount, thresholds[3]))
-    if D==1 or D==2:
-        btdata[candleamount, thresholds[0], "D"] = pd.Series(get_keltner_signals(candle_data, candleamount, thresholds[0], True))
-        btdata[candleamount, thresholds[1], "D"] = pd.Series(get_keltner_signals(candle_data, candleamount, thresholds[1], True))
-        btdata[candleamount, thresholds[2], "D"] = pd.Series(get_keltner_signals(candle_data, candleamount, thresholds[2], True))
-        btdata[candleamount, thresholds[3], "D"] = pd.Series(get_keltner_signals(candle_data, candleamount, thresholds[3], True))
-    return(btdata)
-
-#kmask = pd.DataFrame(keltnerdata()) == "WAIT"
-#kdata = pd.DataFrame(keltnerdata())[~kmask].dropna(how='all')
-#print("# of signals: ",len(kdata))
-candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
-candle_data = candle_df(candles, 1440)
-print(get_keltner_signals(candle_data,candles,1))
+candles = pd.read_csv("ETHUSD-1m-data.csv", sep=',')
+#print(Counter(get_engulf_signals(candles)))
+#print(Counter(get_keltner_signals(candles)))
+print(backtest_strategy(candles, candleamount = 14400*6, signals_to_use= {'keltner': True, 'engulf':True}, capital = 100, trade="long"))
+#print(get_keltner_signals(candle_data,candles,1))
