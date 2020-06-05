@@ -129,7 +129,7 @@ class BitMEXWebsocket:
         self.logger.debug("Started thread")
 
         # Wait for connect before continuing
-        conn_timeout = 5
+        conn_timeout = 60
         while (not self.ws.sock or not self.ws.sock.connected) and conn_timeout:
             sleep(1)
             conn_timeout -= 1

@@ -10,7 +10,10 @@ from bitmex_ws.bitmex_websocket import BitMEXWebsocket
 import logging
 from time import sleep
 from pathlib import Path
+import Pandas as pd
 import multiprocessing
+
+#app = faust.App('myapp', broker='kafka://localhost')
 
 # Models describe how messages are serialized:
 # {"account_id": "3fae-...", amount": 3}
@@ -41,9 +44,13 @@ def run(file=True, tradesymbol="XBTUSD", datatype="trades"):
             #    logger.info("Funds: %s" % ws.funds())
             #logger.info("Market Depth: %s" % ws.market_depth())
             #logger.info("Recent Trades: %s\n\n" % ws.recent_trades())
-            #logger.info("Executable price: %s\n\n" % ws.executableprice())
-            df = pd.read_json(ws.executableprice())
-            print(df)
+            logger.info("Executable price: %s\n\n" % ws.executableprice())
+            
+            # `ignore_index=True` has to be provided, otherwise you'll get
+            # "Can only append a Series if ignore_index=True or if the Series has a name" errors
+            df = pd.DataFrame()
+            df = df.append(ws.executableprice(), ignore_index=True)
+
 
 def setup_logger(file, tradesymbol, datatype):
     logger = logging.getLogger()
@@ -64,7 +71,7 @@ def setup_logger(file, tradesymbol, datatype):
         data_folder = Path(projectpath,"OrderBookData",tradesymbol, datatype + "." + "csv")
         ch = logging.FileHandler(data_folder)
         # create formatter
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter("%(asctime)s - %(message)s")
         # add formatter to ch
         ch.setFormatter(formatter)
         logger.addHandler(ch)
