@@ -10,7 +10,7 @@ from bitmex_ws.bitmex_websocket import BitMEXWebsocket
 import logging
 from time import sleep
 from pathlib import Path
-import asyncio
+import multiprocessing
 
 #app = faust.App('myapp', broker='kafka://localhost')
 
@@ -30,7 +30,7 @@ import asyncio
 load_dotenv()
 
 # run the websocket
-async def run(file=True, tradesymbol="XBTUSD", datatype="trades"):  
+def run(file=True, tradesymbol="XBTUSD", datatype="trades"):  
     #create the BitMex web socket object
     ws = BitMEXWebsocket(endpoint="https://testnet.bitmex.com/api/v1", symbol=tradesymbol, api_key=os.getenv("bitmex_api_key"), api_secret=os.getenv("bitmex_api_secret"))
 
@@ -38,7 +38,7 @@ async def run(file=True, tradesymbol="XBTUSD", datatype="trades"):
     logger.info("Instrument data: %s" % ws.get_instrument())
 
     #run forever
-    while(ws.ws.sock.connected):        
+    while(ws.ws.sock.connected):    
             #if ws.api_key:
             #    logger.info("Funds: %s" % ws.funds())
             #logger.info("Market Depth: %s" % ws.market_depth())
@@ -63,7 +63,7 @@ def setup_logger(file, tradesymbol, datatype):
         logger.setLevel(logging.INFO)  # Change this to DEBUG if you want a lot more info
         projectpath = Path(__file__).parent.absolute()
         data_folder = Path(projectpath,"OrderBookData",tradesymbol, datatype + "." + "csv")
-        ch = logging.FileHandler(data_folder)
+        ch = logging.FileH   andler(data_folder)
         # create formatter
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         # add formatter to ch
@@ -71,7 +71,12 @@ def setup_logger(file, tradesymbol, datatype):
         logger.addHandler(ch)
     return logger
 
-
 if __name__ == "__main__":
-    asyncio.run(run(file=False))
-    asyncio.run(run(file=True))
+    p = multiprocessing.Pool()
+    result = p.imap_unordered(run, [True, False])
+    #terminate process on key press
+    stop_char=""
+    while stop_char.lower() != "q":
+        stop_char=input("Enter 'q' to quit ")
+    print("terminate process")
+    p.terminate()

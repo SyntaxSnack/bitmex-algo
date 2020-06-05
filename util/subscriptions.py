@@ -23,6 +23,7 @@ DEFAULT_SUBS = [
     # This will save bandwidth & processing time in many cases. OrderBook10 is a pulsed
     # table that sends all rows. For more on orderBook subscriptions, see
     # https://www.bitmex.com/app/wsAPI#Subscriptions
+    "orderBook10",
     "orderBookL2",
     "position",
     "quote",

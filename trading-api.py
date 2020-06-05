@@ -94,7 +94,7 @@ dt_str = "5/30/2020 4:05:03:10:10"
 
 #Get timeseries data
 #data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time='29 May 2020', end_time='PRESENT', save=True)
-data = get_all_bitmex(symbol="ETHUSD", kline_size="1m", start_time='29 May 2019', end_time='PRESENT', save=True)
+data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time='1 Jan 2019', end_time='PRESENT', save=True)
 print(data)
 
 #Price data is just public.
@@ -112,7 +112,7 @@ xbt = requests.get("https://testnet.bitmex.com/api/v1/orderBook/L2?symbol=xbt&de
 #a = client.Quote.Quote_get(symbol="XBTUSD", startTime=datetime.datetime(2018, 1, 1)).result()
 #print(a)
 
-symbol = 'ETHUSD'
+symbol = 'XBTUSD'
 qty = -1
 price = ether[1]['price']
 

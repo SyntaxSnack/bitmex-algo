@@ -102,7 +102,7 @@ class BitMEXWebsocket:
      
     def executableprice(self, signal=1):
         '''Determine the nearest executable limit price'''
-        return = self.data['orderBook10']
+        return self.data['orderBook10']
 
     def recent_trades(self):
         '''Get recent trades.'''

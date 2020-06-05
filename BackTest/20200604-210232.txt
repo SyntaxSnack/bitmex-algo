@@ -1,0 +1,14 @@
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+1.0
+Final capital:
+1018.2646303279022
+Total profit:
+18.264630327902182
+----- Parameters used -----
+Ignore Doji: False
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
