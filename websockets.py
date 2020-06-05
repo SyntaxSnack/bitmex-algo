@@ -12,8 +12,6 @@ from time import sleep
 from pathlib import Path
 import multiprocessing
 
-#app = faust.App('myapp', broker='kafka://localhost')
-
 # Models describe how messages are serialized:
 # {"account_id": "3fae-...", amount": 3}
 #class Order(faust.Record):
@@ -43,8 +41,9 @@ def run(file=True, tradesymbol="XBTUSD", datatype="trades"):
             #    logger.info("Funds: %s" % ws.funds())
             #logger.info("Market Depth: %s" % ws.market_depth())
             #logger.info("Recent Trades: %s\n\n" % ws.recent_trades())
-            logger.info("Executable price: %s\n\n" % ws.executableprice())
-
+            #logger.info("Executable price: %s\n\n" % ws.executableprice())
+            df = pd.read_json(ws.executableprice())
+            print(df)
 
 def setup_logger(file, tradesymbol, datatype):
     logger = logging.getLogger()
@@ -54,7 +53,7 @@ def setup_logger(file, tradesymbol, datatype):
         logger.setLevel(logging.INFO)  # Change this to DEBUG if you want a lot more info
         ch = logging.StreamHandler()
         # create formatter
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter("%(asctime)s - %(message)s")
         # add formatter to ch
         ch.setFormatter(formatter)
         logger.addHandler(ch)
@@ -63,7 +62,7 @@ def setup_logger(file, tradesymbol, datatype):
         logger.setLevel(logging.INFO)  # Change this to DEBUG if you want a lot more info
         projectpath = Path(__file__).parent.absolute()
         data_folder = Path(projectpath,"OrderBookData",tradesymbol, datatype + "." + "csv")
-        ch = logging.FileH   andler(data_folder)
+        ch = logging.FileHandler(data_folder)
         # create formatter
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         # add formatter to ch

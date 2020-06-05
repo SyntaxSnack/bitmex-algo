@@ -60,22 +60,17 @@ def get_all_bitmex(symbol, kline_size, start_time, end_time, save = False):
     oldest_point, newest_point = get_datetimes(symbol,kline_size, start_time, end_time,  data_df, source = "bitmex")
     print("getting data from", oldest_point, " to ", newest_point)
     count_minutes = int(divmod((newest_point - oldest_point).total_seconds(),60)[0])
-    print("COUNT_MINUTES",count_minutes)
 
-    print("count minutes", range(count_minutes))
     ranges = []
     for i in range(0,count_minutes,1000):
         if(i+1000 > count_minutes):
             ranges.append([i,count_minutes])
         else: ranges.append([i, i+999])
     #MAXIMUM count is 1000 so we need to loop until we hit the value, adding 1000
-    print(ranges)
     # We can only get 1000 values at a time, so we go from newest to oldest point by intervals of 1000 or less
     for r in ranges:
             start = oldest_point + timedelta(minutes=r[0])
             end = oldest_point + timedelta(minutes=r[1])
-            print("start",start)
-            print("end", end)
             data = bitmex_client.Trade.Trade_getBucketed(symbol=symbol, binSize=kline_size, count=r[1] - r[0], startTime = start, endTime = end).result()[0]
             temp_df = pd.DataFrame(data)
             data_df = data_df.append(temp_df)
