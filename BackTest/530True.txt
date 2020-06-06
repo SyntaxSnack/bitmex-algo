@@ -1,0 +1,817 @@
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+1.0
+Final capital:
+1103.0769858157712
+Total profit:
+103.0769858157712
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+0.041666666666666664
+Final capital:
+1013.1553191489361
+Total profit:
+13.155319148936087
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+1.0
+Final capital:
+1103.0769858157712
+Total profit:
+103.0769858157712
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+1.0
+Final capital:
+1103.0769858157712
+Total profit:
+103.0769858157712
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+1.0
+Final capital:
+1103.0769858157712
+Total profit:
+103.0769858157712
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 32
+ATR Period: 5
+Keltner Period: 30
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 1
+Trade Type: dynamic
+---------------------------

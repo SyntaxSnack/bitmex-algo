@@ -14,23 +14,36 @@ import tracemalloc
 import time
 from pathos.threading import ThreadPool
 import itertools
+from functools import partial
+from datetime import datetime
 
 
-from candlestick import atrseries,get_keltner_signals, get_engulf_signals, Signal
-'''
-def backtest_strategy(candleamount = 1440, signals_to_use = {'keltner': True, 'engulf':True}, kperiod=40, ksma=True, atrperiod=30, capital = 1000, ignoredoji = False, engulfthreshold = 1, trade="dynamic"): #trade= long, short, dynamic
+
+from candlestick import atrseries,get_keltner_signals, get_engulf_signals, Signal, candle_df
+
+candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
+candles = candle_df(candles, 1440 * 31)
+
+def backtest_strategy(candleamount = 1440 * 31, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}): #trade= long, short, dynamic
     atr = pd.Series
     signals = pd.DataFrame()
+    kperiod = signal_params['kperiod']
+    ksma = signal_params['ksma']
+    atrperiod = signal_params['atrperiod']
+    trade = signal_params['trade']
+    ignoredoji = signal_params['ignoredoji']
+    engulfthreshold = signal_params['engulfthreshold']
+    posmult = signal_params['posmult']
 
-    if(signals_to_use['keltner'] == True):
+    if(signal_params['keltner'] == True):
        signals['keltner'] = get_keltner_signals(candles, candleamount=candleamount, ma=kperiod, sma=ksma)
        #print("KELTNER SIGNALS", signals.groupby('keltner'))
 
-    if(signals_to_use['engulf'] == True):
-        signals['engulf'] = get_engulf_signals(candles, candleamount=candleamount)
+    if(signal_params['engulf'] == True):
+        signals['engulf'] = get_engulf_signals(candles, candleamount=candleamount, threshold=engulfthreshold)
 
     atr=atrseries(candles, period=atrperiod)
-
+    visual_data = pd.DataFrame(columns= ['timestamp', 'capital'])
     entry_price = 0
     profit = 0
     signals.to_csv('signals')
@@ -44,10 +57,9 @@ def backtest_strategy(candleamount = 1440, signals_to_use = {'keltner': True, 'e
     stopPrice=0
     stopType="atr"
     for idx, data in signals.head(candleamount).iterrows():
-        if(trade=="dynamic"): #write an algo for this later
-            long=True
-            short=True
-        elif(trade=="long"):
+        long=True
+        short=True
+        if(trade=="long"):
             long=True
             short=False
         elif(trade=="short"):
@@ -83,7 +95,7 @@ def backtest_strategy(candleamount = 1440, signals_to_use = {'keltner': True, 'e
                 if(have_pos == False):
                     position_amount = static_position_amount
                 else:
-                    position_amount += 4*static_position_amount #we only get up to this point if our position is positive
+                    position_amount += posmult*static_position_amount #we only get up to this point if our position is positive
                 fee = position_amount*0.00075
                 capital -= fee
                 print("######## LONG ENTRY ########")
@@ -115,7 +127,7 @@ def backtest_strategy(candleamount = 1440, signals_to_use = {'keltner': True, 'e
                 if(have_pos == False):
                     position_amount = -1*static_position_amount
                 else:
-                    position_amount -= 4*static_position_amount #we only get up to this point if our position is negative
+                    position_amount -= posmult*static_position_amount #we only get up to this point if our position is negative
                 print("####### SHORT ENTRY ########")
                 print("Entry price:", entry_price)
                 print("Stop loss:", stopPrice)
@@ -124,9 +136,11 @@ def backtest_strategy(candleamount = 1440, signals_to_use = {'keltner': True, 'e
                 have_pos = True
                 fee = abs(position_amount*0.00075)
                 capital -= fee
+        visual_data.loc[idx] = [candles.loc[idx,'timestamp'], capital]
+
 
     time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    backtestfile = Path("Backtest",time + ".txt")
+    backtestfile = Path("Backtest",str(atrperiod) + str(kperiod) + str(ksma) + ".txt")
     f = open(backtestfile, "a")
     f.write('\n---------------------------')
     f.write('\n---- BACKTEST COMPLETE ----')
@@ -137,6 +151,16 @@ def backtest_strategy(candleamount = 1440, signals_to_use = {'keltner': True, 'e
     f.write("\nTotal profit:\n")
     f.write(str(capital-1000))
     f.write("\n----- Parameters used -----")
+    f.write("\nSignals Used: ")
+    f.write("Keltner:" + str(signal_params['keltner']) + ", Engulf:" + str(signal_params['engulf']))
+    f.write("\nPosition multiplier: ")
+    f.write(str(posmult))
+    f.write("\nATR Period: ")
+    f.write(str(atrperiod))
+    f.write("\nKeltner Period: ")
+    f.write(str(kperiod))
+    f.write("\nKeltner SMA (EMA if false): ")
+    f.write(str(ksma))
     f.write("\nIgnore Doji: ")
     f.write(str(ignoredoji))
     f.write("\nEngulfing Threshold: ")
@@ -144,60 +168,61 @@ def backtest_strategy(candleamount = 1440, signals_to_use = {'keltner': True, 'e
     f.write("\nTrade Type: ")
     f.write(trade)
     f.write('\n---------------------------\n')
+    visual_data.to_csv('VISUAL DATA')
 
-    return("VARIABLES TESTED FOR",candleamount)
-    #for i in candles.head(candleamount).iterrows():
-    return signals
+    visualize_trades(visual_data, signal_params)
 
-#define data to test with
-candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
+    return [signal_params, capital]
 
-#create multithread pool
-pool = ThreadPool()
+def visualize_trades(df):
+    import matplotlib.pyplot 
+    from matplotlib import pyplot as plt
 
-from functools import partial
-#mapfunc = partial(backtest_strategy, 'atrperiod')
-'''
-'''
-POSSIBLE ARGUMENTS TO BACKTEST WITH:
-format variables like this to multi-thread several variations at once var = [value1, 2, 3, etc]
-    candleamount = MIN_IN_DAY
-    signals_to_use = {'keltner': True, 'engulf':True}
-    kperiod=40
-    ksma=True
-    atrperiod=30
-    capital = 1000
-    ignoredoji = False
-    engulfthreshold = 1
-    trade="dynamic"
-#indices of value in tuples [] correspond to each other
-'''
-'''
-atrperiod_v = [5,10,20,30]
-kperiod_v = [10,20,30,40]
+    list_of_datetimes = df['timestamp'].tolist()
+    list_of_datetimes = [t[:-6] for t in list_of_datetimes]
+    l = [datetime.strptime(t, "%Y-%m-%d %H:%M:%S") for t in list_of_datetimes]
+    values = df['capital'].tolist()
+    dates = matplotlib.dates.date2num(l)
+    matplotlib.pyplot.plot_date(dates, values,'-b')
+    plt.savefig('foo.png')
+
+
+
+
+atrperiod_v = [5,50]
+kperiod_v = [15,30]
 ksma_v = [True]
+keltner_v = [True]
+engulf_v = [True]
+ignoredoji_v = [True,False]
+trade_v = ['dynamic', 'long']
+posmult_v = [2, 4, 8]
+engulfthreshold_v = [.5, .75 , 1]
 
-
-
-
-a = [atrperiod_v, kperiod_v, ksma_v]
+a = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v]
 combinations = list(itertools.product(*a))
 atrperiod_v = [l[0] for l in combinations]
+
+atrperiod_v = []
+for l in combinations:
+    atrperiod_v.append(l*3)
+
 kperiod_v = [l[1] for l in combinations]
 ksma_v = [l[2] for l in combinations]
-
-print(atrperiod_v)
-print(kperiod_v)
-print(ksma_v)
+params_to_try = [ {'keltner':l[3] , 'engulf':l[4],  'kperiod':l[1], 'ksma':l[2], 'atrperiod':l[0], 'ignoredoji':l[5], 'engulfthreshold': l[8], 'trade':l[6], 'posmult':l[7]} for l in combinations]
+#{'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}
+params_to_try = [{'keltner': True, 'engulf': True, 'kperiod': 30, 'ksma': True, 'atrperiod': 5, 'ignoredoji': True, 'engulfthreshold': 1, 'trade': 'dynamic', 'posmult': 32}]
 #atrperiod_v = [5,10,20,30]
 #kperiod_v = [10,20,30,40]
 #ksma_v = [True, True, True, True]
-results = pool.imap(lambda atrperiod, kperiod, ksma, : backtest_strategy(atrperiod=atrperiod, kperiod=kperiod, ksma=ksma), atrperiod_v, kperiod_v, ksma_v)
-print(list(results))
-    #terminate process on key press
-    #stop_char=""
-    #while stop_char.lower() != "q":
-    #    stop_char=input("Enter 'q' to quit ")
-    #print("terminate process")
-    #p.terminate()
-    '''
+#results = pool.uimap(lambda atrperiod, kperiod, ksma, : backtest_strategy(atrperiod=atrperiod, kperiod=kperiod, ksma=ksma), atrperiod_v, kperiod_v, ksma_v)
+#backtest_strategy()
+
+#create multithread pool w/ number of threads being number of combinations
+print("thread amount:", len(params_to_try))
+#pool = ThreadPool(len(params_to_try))
+
+backtest_strategy(signal_params=params_to_try[0])
+#results = pool.uimap(lambda signal_params, : backtest_strategy(signal_params=signal_params), params_to_try)
+
+#print("THE BEST SIGNALS ARE", max(list(results), key=lambda x:x[1]))
