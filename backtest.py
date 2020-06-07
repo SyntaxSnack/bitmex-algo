@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 from collections import Counter
@@ -16,10 +15,7 @@ from pathos.threading import ThreadPool
 import itertools
 from functools import partial
 from datetime import datetime
-
-
-
-from candlestick import atrseries,get_keltner_signals, get_engulf_signals, Signal, candle_df
+from indicators import atrseries,get_keltner_signals, get_engulf_signals, Signal, candle_df
 
 candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
 print(candles)
@@ -37,13 +33,13 @@ def backtest_strategy(candleamount = 1440, capital = 1000, signal_params = {'kel
     posmult = signal_params['posmult']
 
     if(signal_params['keltner'] == True):
-       signals['keltner'] = get_keltner_signals(candles, candleamount=candleamount, ma=kperiod, sma=ksma)
+       signals['keltner'] = get_keltner_signals(candles, candleamount=candleamount, kperiod=kperiod, ksma=ksma)
        #print("KELTNER SIGNALS", signals.groupby('keltner'))
 
     if(signal_params['engulf'] == True):
         signals['engulf'] = get_engulf_signals(candles, candleamount=candleamount, threshold=engulfthreshold)
 
-    atr=atrseries(candles, period=atrperiod)
+    atr=atrseries(candles, candleamount, atrperiod)
     visual_data = pd.DataFrame(columns= ['timestamp', 'capital'])
     entry_price = 0
     profit = 0
@@ -84,7 +80,7 @@ def backtest_strategy(candleamount = 1440, capital = 1000, signal_params = {'kel
                 capital -= fee
                 position_amount = 0
                 print("######## SHORT EXIT ########")
-                print("Exit price:", candles.iloc[idx],['open'])
+                print("Exit price:", candles.iloc[idx]['open'])
                 print("Turnover:", profit - fee*2)
                 print("############################")
                 #100 * (200-400/400) = 100
@@ -141,12 +137,9 @@ def backtest_strategy(candleamount = 1440, capital = 1000, signal_params = {'kel
                 have_pos = True
                 fee = abs(position_amount*0.00075)
                 capital -= fee
-        print(capital)
         visual_data.loc[idx] = [candles.iloc[idx]['timestamp'], capital]
         if last:
             idx=idx+1
-            print(idx)
-
 
     time = datetime.now().strftime("%Y%m%d-%H%M%S")
     backtestfile = Path("Backtest",str(atrperiod) + str(kperiod) + str(ksma) + ".txt")
@@ -193,7 +186,8 @@ def visualize_trades(df):
     values = df['capital'].tolist()
     dates = matplotlib.dates.date2num(l)
     matplotlib.pyplot.plot_date(dates, values,'-b')
-    plt.savefig('foo.png')
+    plt.xticks(rotation=90)
+    plt.savefig('Plotting//'+ datetime.now().strftime("%Y%m%d-%H%M") + '.png')
 
 
 

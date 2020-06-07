@@ -2,3 +2,7 @@ OrderbookData/ETHUSD/trades.csv
 OrderbookData/XBTUSD/trades.csv
 ETHUSD-1m-data.csv
 BTUSD-1m-data.csv
+.vscode
+__pycache__
+bitmex_ws/__pycache__
+util/__pycache__

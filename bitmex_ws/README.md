@@ -32,6 +32,8 @@ client - no need to poll the server.
     ws.market_depth()
     ws.open_orders()
     ws.recent_trades()
+	ws.recent_trades()
+	ws.executableprice()
 
 `main.py` has a full example of how to connect to BitMEX:
 

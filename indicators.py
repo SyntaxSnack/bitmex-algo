@@ -64,7 +64,8 @@ def keltnersignals(row):
     else:
         return Signal.WAIT
 
-def atrseries(candles, period=10, fillna=True):
+def atrseries(candles, candleamount, period, fillna=True):
+    candles = candles.tail(candleamount)
     atr = ta.volatility.AverageTrueRange(candles["high"], candles["low"], candles["close"], n=period, fillna=fillna)
     series = pd.Series()
     series = atr.average_true_range()
@@ -82,8 +83,12 @@ def get_engulf_signals(candles, candleamount = MIN_IN_DAY, threshold=1, ignoredo
         prev_row = row
     return signals
 
-def get_keltner_signals(candles, candleamount = MIN_IN_DAY, ma=10, threshold = 1, ignoredoji = False, sma=True):
-    indicator_kelt = ta.volatility.KeltnerChannel(high=candles["high"], low=candles["low"], close=candles["close"], n=ma, fillna=True, ov=sma)
+def keltner(candles, candleamount, kperiod, ksma):
+    candles = candles.tail(candleamount)
+    return(ta.volatility.KeltnerChannel(high=candles["high"], low=candles["low"], close=candles["close"], n=kperiod, fillna=True, ov=ksma))
+
+def get_keltner_signals(candles, candleamount = MIN_IN_DAY, kperiod=10, threshold = 1, ignoredoji = False, ksma=True):
+    indicator_kelt = keltner(candles, candleamount, kperiod, ksma)
     kseries = pd.DataFrame(columns=['hband', 'lband'])
     # Add Bollinger Bands features
     kseries["hband"] = indicator_kelt.keltner_channel_hband_indicator()
@@ -93,3 +98,12 @@ def get_keltner_signals(candles, candleamount = MIN_IN_DAY, ma=10, threshold = 1
     for i,row in kseries.tail(candleamount).iterrows():
         signals.append(keltnersignals(row))
     return signals
+
+def get_keltner_bands(candles, candleamount = MIN_IN_DAY, kperiod=10, threshold = 1, ignoredoji = False, ksma=True):
+    indicator_kelt = keltner(candles, candleamount, kperiod, ksma)
+    kseries = pd.DataFrame(columns=['hband', 'lband'])
+    # Add Bollinger Bands features
+    kseries["hband"] = indicator_kelt.keltner_channel_hband()
+    kseries["lband"] = indicator_kelt.keltner_channel_lband()
+    kseries["w"] = indicator_kelt.keltner_channel_wband()
+    return(kseries)
