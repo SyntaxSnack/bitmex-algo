@@ -1,0 +1,19 @@
+
+---------------------------
+---- BACKTEST COMPLETE ----
+Backtest time (days):
+1.0
+Final capital:
+993.4149414337948
+Total profit:
+-6.585058566205248
+----- Parameters used -----
+Signals Used: Keltner:True, Engulf:True
+Position multiplier: 2
+ATR Period: 5
+Keltner Period: 15
+Keltner SMA (EMA if false): True
+Ignore Doji: True
+Engulfing Threshold: 0.5
+Trade Type: dynamic
+---------------------------
