@@ -28,7 +28,7 @@ MIN_IN_DAY = 1440
 def candle_df(candles, candleamount):
     candle_data = pd.DataFrame(columns=['timestamp', 'open', 'close','high', 'low', 'candle size', 'type'])
     # iterate over rows with iterrows()
-    for index, data in candles.head(candleamount).iterrows():
+    for index, data in candles.tail(candleamount).iterrows():
         #determine if candles are of opposite type
         if data['open'] < data['close']:
             type = "green"
@@ -77,7 +77,7 @@ def get_engulf_signals(candles, candleamount = MIN_IN_DAY, threshold=1, ignoredo
     signals=[Signal.WAIT]
     #generate a trade signal for every candle except for the last, and store in the list we created
     prev_row = candles.iloc[0]
-    for i,row in candles.head(candleamount).iloc[1:].iterrows():
+    for i,row in candles.tail(candleamount).iloc[1:].iterrows():
         signals.append(engulfingsignals(row, prev_row, threshold, ignoredoji))
         prev_row = row
     return signals
@@ -90,6 +90,6 @@ def get_keltner_signals(candles, candleamount = MIN_IN_DAY, ma=10, threshold = 1
     kseries["lband"] = indicator_kelt.keltner_channel_lband_indicator()
     signals=[]
 
-    for i,row in kseries.head(candleamount).iterrows():
+    for i,row in kseries.tail(candleamount).iterrows():
         signals.append(keltnersignals(row))
     return signals

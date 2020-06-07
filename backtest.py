@@ -22,9 +22,10 @@ from datetime import datetime
 from candlestick import atrseries,get_keltner_signals, get_engulf_signals, Signal, candle_df
 
 candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
-candles = candle_df(candles, 1440 * 31)
+print(candles)
+candles = candle_df(candles, 1440)
 
-def backtest_strategy(candleamount = 1440 * 31, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}): #trade= long, short, dynamic
+def backtest_strategy(candleamount = 1440, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}): #trade= long, short, dynamic
     atr = pd.Series
     signals = pd.DataFrame()
     kperiod = signal_params['kperiod']
@@ -56,7 +57,11 @@ def backtest_strategy(candleamount = 1440 * 31, capital = 1000, signal_params = 
     stop=False
     stopPrice=0
     stopType="atr"
-    for idx, data in signals.head(candleamount).iterrows():
+    for idx, data in signals.tail(candleamount).iterrows():
+        last = False
+        if idx == candleamount-1:
+            idx=idx-1
+            last = True
         long=True
         short=True
         if(trade=="long"):
@@ -66,30 +71,30 @@ def backtest_strategy(candleamount = 1440 * 31, capital = 1000, signal_params = 
             long=False
             short=True
         if (entry_price != 0 and stopPrice != 0):
-            if(((position_amount > 0) and (candles.loc[idx,'open'] < stopPrice)) or (((position_amount < 0)) and (candles.loc[idx,'open'] > stopPrice))):
+            if(((position_amount > 0) and (candles.iloc[idx]['open'] < stopPrice)) or (((position_amount < 0)) and (candles.iloc[idx]['open'] > stopPrice))):
                 stop=True
                 print("!!!!!! STOP PRICE HIT !!!!!!")
-                print("ATR stop threshold: ",atr[idx-1]*50)
+                print("ATR stop threshold: ",atr.iloc[idx-1]*50)
         if((all([v == Signal.BUY for v in data])) or (stop and position_amount < 0)):
             if((short and have_pos) and (position_amount < 0)):
             #short is only a constant parameter to determine if we are shorting at all
             #position_amount determines if we are currently short or long
-                profit = position_amount * ((candles.loc[idx,'open'] - entry_price)/entry_price)
+                profit = position_amount * ((candles.iloc[idx]['open'] - entry_price)/entry_price)
                 capital += profit
                 capital -= fee
                 position_amount = 0
                 print("######## SHORT EXIT ########")
-                print("Exit price:", candles.loc[idx,'open'])
+                print("Exit price:", candles.iloc[idx],['open'])
                 print("Turnover:", profit - fee*2)
                 print("############################")
                 #100 * (200-400/400) = 100
                 entry_price = 0
                 have_pos = False
                 stop = False
-            elif(candles.loc[idx+1,'open'] > entry_price):
-                entry_price = candles.loc[idx+1,'open']
+            elif(candles.iloc[idx+1]['open'] > entry_price):
+                entry_price = candles.iloc[idx+1]['open']
                 if(stopType == "atr"): #and if we already have a position, our stop moves up to reflect second entry
-                    stopPrice = entry_price - atr[idx]*50
+                    stopPrice = entry_price - atr.iloc[idx]*50
                 elif(stopType == "perc"):
                     stopPrice = entry_price * (1-stop_loss)
                 if(have_pos == False):
@@ -106,22 +111,22 @@ def backtest_strategy(candleamount = 1440 * 31, capital = 1000, signal_params = 
                 have_pos = True
         elif(all([v == Signal.SELL for v in data]) or (stop and position_amount > 0)):
             if((long and have_pos) and (position_amount > 0)):
-                profit = position_amount * ((candles.loc[idx,'open'] - entry_price)/entry_price)
+                profit = position_amount * ((candles.iloc[idx]['open'] - entry_price)/entry_price)
                 capital += profit
                 capital -= fee
                 position_amount = 0
                 print("######### LONG EXIT ########")
-                print("Exit price:", candles.loc[idx,'open'])
+                print("Exit price:", candles.iloc[idx]['open'])
                 print("Turnover:", profit - fee*2)
                 print("############################")
                 #100 * (200-400/400) = 100
                 entry_price = 0
                 have_pos = False
                 stop = False
-            elif(short and ((candles.loc[idx+1,'open'] < entry_price) or entry_price==0)): #only add to position if original position is in profit!
-                entry_price =  candles.loc[idx+1,'open']
+            elif(short and ((candles.iloc[idx+1]['open'] < entry_price) or entry_price==0)): #only add to position if original position is in profit!
+                entry_price =  candles.iloc[idx+1]['open']
                 if(stopType == "atr"):
-                    stopPrice = entry_price + atr[idx]*50
+                    stopPrice = entry_price + atr.iloc[idx]*50
                 elif(stopType == "perc"):
                     stopPrice = entry_price * (1+stop_loss)
                 if(have_pos == False):
@@ -136,7 +141,11 @@ def backtest_strategy(candleamount = 1440 * 31, capital = 1000, signal_params = 
                 have_pos = True
                 fee = abs(position_amount*0.00075)
                 capital -= fee
-        visual_data.loc[idx] = [candles.loc[idx,'timestamp'], capital]
+        print(capital)
+        visual_data.loc[idx] = [candles.iloc[idx]['timestamp'], capital]
+        if last:
+            idx=idx+1
+            print(idx)
 
 
     time = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -170,7 +179,7 @@ def backtest_strategy(candleamount = 1440 * 31, capital = 1000, signal_params = 
     f.write('\n---------------------------\n')
     visual_data.to_csv('VISUAL DATA')
 
-    visualize_trades(visual_data, signal_params)
+    visualize_trades(visual_data)
 
     return [signal_params, capital]
 
