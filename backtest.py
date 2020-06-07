@@ -43,7 +43,8 @@ def backtest_strategy(candleamount = 1440, capital = 1000, signal_params = {'kel
     visual_data = pd.DataFrame(columns= ['timestamp', 'capital'])
     entry_price = 0
     profit = 0
-    signals.to_csv('signals')
+    currentTime = datetime.now().strftime("%Y%m%d-%H%M")
+    signals.to_csv('BacktestData//Signals//' + currentTime + '.csv')
     position_size = .1
     position_amount = capital * position_size
     static_position_amount = capital * position_size
@@ -141,8 +142,7 @@ def backtest_strategy(candleamount = 1440, capital = 1000, signal_params = {'kel
         if last:
             idx=idx+1
 
-    time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    backtestfile = Path("Backtest",str(atrperiod) + str(kperiod) + str(ksma) + ".txt")
+    backtestfile = Path("BacktestData",currentTime + "_ATR" + str(atrperiod) + "_KP" + str(kperiod) + "_KSMA" + str(ksma) + ".txt")
     f = open(backtestfile, "a")
     f.write('\n---------------------------')
     f.write('\n---- BACKTEST COMPLETE ----')
@@ -170,13 +170,13 @@ def backtest_strategy(candleamount = 1440, capital = 1000, signal_params = {'kel
     f.write("\nTrade Type: ")
     f.write(trade)
     f.write('\n---------------------------\n')
-    visual_data.to_csv('VISUAL DATA')
+    visual_data.to_csv('Plotting//' + currentTime + '.csv')
 
-    visualize_trades(visual_data)
+    visualize_trades(visual_data, currentTime)
 
     return [signal_params, capital]
 
-def visualize_trades(df):
+def visualize_trades(df, currentTime):
     import matplotlib.pyplot 
     from matplotlib import pyplot as plt
 
@@ -187,7 +187,7 @@ def visualize_trades(df):
     dates = matplotlib.dates.date2num(l)
     matplotlib.pyplot.plot_date(dates, values,'-b')
     plt.xticks(rotation=90)
-    plt.savefig('Plotting//'+ datetime.now().strftime("%Y%m%d-%H%M") + '.png')
+    plt.savefig('Plotting//'+ currentTime + '.png')
 
 
 
