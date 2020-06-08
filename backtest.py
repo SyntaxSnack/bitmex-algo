@@ -15,15 +15,16 @@ from pathos.threading import ThreadPool
 import itertools
 from functools import partial
 from datetime import datetime
-from indicators import atrseries,get_keltner_signals, get_engulf_signals, Signal, candle_df
+from indicators import Signal, candle_df
 import getSignals as getSignals
 
-candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
+symbol = "XBTUSD"
+candles = pd.read_csv(symbol + "-1m-data.csv", sep=',')
 #print(candles)
-candleamount = 1440*31
-candles = candle_df(candles, candleamount)
+candleamount = 140
+e_candles = candle_df(candles, candleamount)
 
-def backtest_strategy(candleamount, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}): #trade= long, short, dynamic
+def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}, symbol=symbol): #trade= long, short, dynamic
     atr = pd.Series
     signals = pd.DataFrame()
     kperiod = signal_params['kperiod']
@@ -36,14 +37,14 @@ def backtest_strategy(candleamount, capital = 1000, signal_params = {'keltner': 
     candle_data = candles.tail(candleamount)
 
     if(signal_params['keltner'] == True):
-       signals['keltner'] = get_keltner_signals(candle_data, candleamount=candleamount, kperiod=kperiod, ksma=ksma)
+       signals['keltner'] = pd.read_csv('IndicatorData//' + symbol + "//Keltner//" + "SIGNALS_kp" + signal_params['kperiod'] + '_sma' + signal_params['ksma'], mode='w')
        #print("KELTNER SIGNALS", signals.groupby('keltner'))
 
     if(signal_params['engulf'] == True):
         signals['engulf'] = get_engulf_signals(candle_data, candleamount=candleamount, threshold=engulfthreshold)
 
     
-    atrseries = pd.read_csv('IndicatorData//ATR//' + "p" + str(atrperiod) + '.csv', sep=',')
+    atrseries = pd.read_csv('IndicatorData//' + symbol + "//ATR//" + "p" + str(atrperiod) + '.csv', sep=',')
 
     signal_len = len(signals.loc[0])
     candle_data = candle_data.reset_index(drop=True)
@@ -197,59 +198,75 @@ def visualize_trades(df, currentTime):
     plt.xticks(rotation=90)
     plt.savefig('Plotting//'+ currentTime + '.png')
 
+#ATR
 atrperiod_v = [5,50]
+#KELTNER
 kperiod_v = [15,30]
 ksma_v = [True]
 keltner_v = [True]
+#ENGULFING CANDLES
 engulf_v = [True]
-ignoredoji_v = [True,False]
-trade_v = ['dynamic', 'long']
-posmult_v = [2, 4, 8]
 engulfthreshold_v = [.5, .75 , 1]
+ignoredoji_v = [True,False]
+#TRADE TYPES
+trade_v = ['dynamic', 'long']
+#POSITION SIZES
+posmult_v = [2, 4, 8]
 
 a = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v]
 combinations = list(itertools.product(*a))
 
 def get_all_combinations(params):
-    combinations = list(itertools.product(*a))
-    params_to_try = [ { 'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] , 'engulf':l[4], 'ignoredoji':l[5], 'trade':l[6],  'posmult':l[7], 'engulfthreshold': l[8]} for l in combinations]
+    params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] , 'engulf':l[4], 'ignoredoji':l[5], 'trade':l[6],  'posmult':l[7], 'engulfthreshold': l[8]} for l in combinations]
     return params_to_try
 
-params_to_try = [ {'keltner':l[3] , 'engulf':l[4],  'kperiod':l[1], 'ksma':l[2], 'atrperiod':l[0], 'ignoredoji':l[5], 'engulfthreshold': l[8], 'trade':l[6], 'posmult':l[7]} for l in combinations]
 #params_to_try = [{'keltner': True, 'engulf': True, 'kperiod': 30, 'ksma': True, 'atrperiod': 5, 'ignoredoji': True, 'engulfthreshold': 1, 'trade': 'dynamic', 'posmult': 32}]
 
-def genIndicators(candleamount, keltner_params, atrperiod_v):
+def genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v):
+    #Generate set of unique Keltner values
     kelt_df = pd.DataFrame(keltner_params)
-    unique_pairs = set()
+    kelt_pairs = set()
     for kpreriod in keltner_params[0]:
         for ksma in keltner_params[1]:
-            unique_pairs.add((kpreriod, ksma))
+            kelt_pairs.add((kpreriod, ksma))
 
-    keltner_pairs = list(unique_pairs)
-    atr_pairs = list(set(atrperiod_v)) 
+    #Generate set of unqiue engulfing signals
+    engulf_df = pd.DataFrame(engulf_params)
+    engulf_pairs = set()
+    for engfulfthreshold in engulf_params[0]:
+        for ignoredoji in engulf_params[1]:
+            engulf_pairs.add((engfulfthreshold, ignoredoji))
 
+    keltner_pairs = list(kelt_pairs)
+    engulf_pairs = list(engulf_pairs)
+    atr_pairs = list(set(atrperiod_v))
 
-    getSignals.saveKeltners(candleamount, params=keltner_pairs)
-
+    getSignals.saveKeltnerBands(candleamount, params=keltner_pairs)
+    getSignals.saveKeltnerSignals(candleamount, params=keltner_pairs)
+    getSignals.saveEngulfingSignals(candleamount, params=engulf_pairs)
     getSignals.saveATR(candleamount, params=atr_pairs)
 
-def saveIndicators(candleamount, combinations):
+def saveIndicators(combinations, candleamount=candleamount):
     atrperiod_v = [l[0] for l in combinations]
     kperiod_v = [l[1] for l in combinations]
     ksma_v = [l[2] for l in combinations]
     keltner_params = [kperiod_v, ksma_v]
-    genIndicators(candleamount, keltner_params, atrperiod_v)
+    engulf_params = [engulfthreshold_v, ignoredoji_v]
+    print('got here')
+    genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v)
 
 #example of generating all indicators for defined params for a specific length of time
     #they go into Indicators/ folder, saved a csv by their parameters
         #ATRs = p<period>.csv
         #Keltners = kp<kperiod>_sma<ksma=True|False>.csv
-saveIndicators(candleamount, combinations)
+print("got here")
+saveIndicators(combinations, candleamount=candleamount)
 
 ###create multithread pool w/ number of threads being number of combinations###
 #print("thread amount:", len(params_to_try))
 #pool = ThreadPool(len(params_to_try))
-#results = pool.uimap(lambda signal_params, : backtest_strategy(signal_params=signal_params), params_to_try)
+#pool.uimap(lambda signal_params, : saveIndicators(combinations=combinations), params_to_try)
+#results = pool.u  imap(lambda signal_params, : backtest_strategy(signal_params=signal_params), params_to_try)
 #print("THE BEST SIGNALS ARE", max(list(results), key=lambda x:x[1]))
 
-backtest_strategy(candleamount, signal_params=params_to_try[0])
+#backtest_strategy(candleamount, signal_params=params_to_try[0])

@@ -42,6 +42,7 @@ def candle_df(candles, candleamount):
 
 #realtime func
 def engulfingsignals(curr_row, prev_row, threshold = 1, ignoredoji = False):
+    print(curr_row)
     if curr_row['type'] == prev_row['type']: #candle type stays the same
         return Signal.WAIT
     elif (curr_row['candle size'] * threshold) > (prev_row['candle size']) and (ignoredoji == False or prev_row['candle size'] > XBTUSD): # candle is opposite direction and larger
@@ -72,13 +73,13 @@ def atrseries(candles, candleamount, period, fillna=True):
     return(series)
 
 #back-test on the series extrapolated from price data
-def get_engulf_signals(candles, candleamount = MIN_IN_DAY, threshold=1, ignoredoji=False):
+def get_engulf_signals(e_candles, candleamount = MIN_IN_DAY, threshold=1, ignoredoji=False):
     #first generate a candle-series!
     #candles = candle_df(candles, candleamount)
     signals=[Signal.WAIT]
     #generate a trade signal for every candle except for the last, and store in the list we created
-    prev_row = candles.iloc[0]
-    for i,row in candles.tail(candleamount).iloc[1:].iterrows():
+    prev_row = e_candles.iloc[0]
+    for i,row in e_candles.tail(candleamount).iloc[1:].iterrows():
         signals.append(engulfingsignals(row, prev_row, threshold, ignoredoji))
         prev_row = row
     return signals
