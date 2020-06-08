@@ -24,29 +24,28 @@ def saveATR(candleamount, params=[], fillna=True, symbol='XBTUSD'):
     for i in params:
         df = ind.atrseries(candles, candleamount, i)
         print(df)
-        df.to_csv("IndicatorData//" + symbol + "//ATR//" + "p" + str(i) + '.csv', mode='w')
+        df.to_csv('IndicatorData//' + symbol + '//ATR//' + "p" + str(i) + ".csv", mode='w')
 
 def saveKeltnerBands(candleamount, params=[], symbol='XBTUSD'):
     for i in params:
         df = ind.get_keltner_bands(candles, candleamount=candleamount, kperiod=i[0], ksma=i[1])
         print(df)
-        df.to_csv("IndicatorData//" + symbol + "//Keltner//" + "BANDS_kp" + str(i[0]) + '_sma' + str(i[1]), mode='w')
+        df.to_csv('IndicatorData//' + symbol + '//Keltner//' + "BANDS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv', mode='w')
 
 def saveKeltnerSignals(candleamount, params=[], symbol='XBTUSD'):
     for i in params:
-        signals = ind.get_keltner_signals(candles, candleamount=candleamount, kperiod=i[0], ksma=i[1])
+        signals =  ind.get_keltner_signals(candles, candleamount=candleamount, kperiod=i[0], ksma=i[1])
         df = pd.Series(signals)
         print(df)
-        df.to_csv("IndicatorData//" + symbol + "//Keltner//" + "SIGNALS_kp" + str(i[0]) + '_sma' + str(i[1]), mode='w')
+        df.to_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv', mode='w', index=False)
 
 def saveEngulfingSignals(candleamount, params=[], symbol='XBTUSD'):
     e_candles = ind.candle_df(candles, candleamount)
     for i in params:
-        print(type(i[0]))
         signals = ind.get_engulf_signals(e_candles, candleamount, threshold=i[0], ignoredoji=i[1])
         df = pd.Series(signals)
         print(df)
-        df.to_csv("IndicatorData//" + symbol + "//Engulfing//" + "SIGNALS_kp" + str(i[0]) + '_sma' + str(i[1]), mode='w')
+        df.to_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(i[0]) + "_ignoredoji" + str(i[1]) + '.csv', mode='w', index=False)
 
 #Examples
 #saveKeltnerBands(100, [10,1], [True, False])

@@ -22,11 +22,13 @@ symbol = "XBTUSD"
 candles = pd.read_csv(symbol + "-1m-data.csv", sep=',')
 #print(candles)
 candleamount = 140
-e_candles = candle_df(candles, candleamount)
+candles = candle_df(candles, candleamount)
 
 def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}, symbol=symbol): #trade= long, short, dynamic
     atr = pd.Series
     signals = pd.DataFrame()
+    keltner_signals = pd.Series()
+    engulf_signals = pd.Series()
     kperiod = signal_params['kperiod']
     ksma = signal_params['ksma']
     atrperiod = signal_params['atrperiod']
@@ -37,22 +39,27 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
     candle_data = candles.tail(candleamount)
 
     if(signal_params['keltner'] == True):
-       signals['keltner'] = pd.read_csv('IndicatorData//' + symbol + "//Keltner//" + "SIGNALS_kp" + signal_params['kperiod'] + '_sma' + signal_params['ksma'], mode='w')
-       #print("KELTNER SIGNALS", signals.groupby('keltner'))
+        keltner_signals = pd.read_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(signal_params['kperiod']) + '_sma' + str(signal_params['ksma']) + '.csv', sep=',')
+        #print("KELTNER SIGNALS", signals.groupby('keltner'))
 
     if(signal_params['engulf'] == True):
-        signals['engulf'] = get_engulf_signals(candle_data, candleamount=candleamount, threshold=engulfthreshold)
+        engulf_signals = pd.read_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(signal_params['engulfthreshold']) + '_ignoredoji' + str(signal_params['ignoredoji']) + '.csv', sep=',')
 
     
     atrseries = pd.read_csv('IndicatorData//' + symbol + "//ATR//" + "p" + str(atrperiod) + '.csv', sep=',')
 
+    signals = pd.concat([keltner_signals, engulf_signals], axis=1)
+    print(signals)
+    signals.columns = ["keltner", "keltner"]
     signal_len = len(signals.loc[0])
+
     candle_data = candle_data.reset_index(drop=True)
     candle_data = pd.DataFrame.join(candle_data, atrseries)
     candle_data = pd.DataFrame.join(candle_data, signals)   #COMBINE SIGNALS AND CANDLE DATA
     #print("CANDLE DATA")
     #print(candle_data)
-    
+    print(signals)
+    print(candle_data)
     
 
     visual_data = pd.DataFrame(columns= ['timestamp', 'capital'])
@@ -212,13 +219,10 @@ ignoredoji_v = [True,False]
 trade_v = ['dynamic', 'long']
 #POSITION SIZES
 posmult_v = [2, 4, 8]
+params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v]
 
-a = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v]
-combinations = list(itertools.product(*a))
-
-def get_all_combinations(params):
-    params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] , 'engulf':l[4], 'ignoredoji':l[5], 'trade':l[6],  'posmult':l[7], 'engulfthreshold': l[8]} for l in combinations]
-    return params_to_try
+combinations = list(itertools.product(*params))
+params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] , 'engulf':l[4], 'ignoredoji':l[5], 'trade':l[6],  'posmult':l[7], 'engulfthreshold': l[8]} for l in combinations]
 
 #params_to_try = [{'keltner': True, 'engulf': True, 'kperiod': 30, 'ksma': True, 'atrperiod': 5, 'ignoredoji': True, 'engulfthreshold': 1, 'trade': 'dynamic', 'posmult': 32}]
 
@@ -268,5 +272,4 @@ saveIndicators(combinations, candleamount=candleamount)
 #pool.uimap(lambda signal_params, : saveIndicators(combinations=combinations), params_to_try)
 #results = pool.u  imap(lambda signal_params, : backtest_strategy(signal_params=signal_params), params_to_try)
 #print("THE BEST SIGNALS ARE", max(list(results), key=lambda x:x[1]))
-
-#backtest_strategy(candleamount, signal_params=params_to_try[0])
+backtest_strategy(candleamount, signal_params=params_to_try[0])
