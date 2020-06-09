@@ -9,12 +9,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from pathos.multiprocessing import ProcessingPool as Pool
-import tracemalloc
+#import tracemalloc
 import time
 from pathos.threading import ThreadPool
 import itertools
-
-tracemalloc.start()
 
 class Signal(Enum):
     WAIT = 0
@@ -61,10 +59,8 @@ def engulfingsignals(curr_row, threshold, ignoredoji):
         signals = Signal.WAIT
     elif (curr_row[5] * threshold) > (prev_row[5]) and (ignoredoji == False or prev_row[5] > XBTUSD): # candle is opposite direction and larger
         if curr_row[6] == "red":
-           # print("SELLLLL")
             signals = Signal.SELL
         elif curr_row[6] == "green":
-           # print("BUUYYYYY")
             signals = Signal.BUY
         else:
             signals = Signal.WAIT
@@ -74,7 +70,6 @@ def engulfingsignals(curr_row, threshold, ignoredoji):
     return(signals)
 
 def keltnersignals(row):
-    #print(type(row[1]), row[1][1])
     if row.loc['lband'] == 1.0:
         return Signal.BUY
     elif row.loc['hband'] == 1.0:
@@ -85,7 +80,7 @@ def keltnersignals(row):
 def atrseries(candles, candleamount, period, fillna=True):
     candles = candles.tail(candleamount)
     atr = ta.volatility.AverageTrueRange(candles["high"], candles["low"], candles["close"], n=period, fillna=fillna)
-    series = pd.Series()
+    series = pd.Series(dtype=np.uint16)
     series = atr.average_true_range()
     return(series)
 
@@ -103,7 +98,6 @@ def get_engulf_signals(e_candles, candleamount, params):
     #results = epool.uimap(engulfingsignals, e_candles, threshold, ignoredoji)
     print("Computing engulfing signals with given params for all candles multithreaded...")
     result = list(results)
-    #print(results)
     return(result)
 
 def keltner(candles, candleamount, kperiod, ksma):

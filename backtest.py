@@ -9,26 +9,25 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from pathos.multiprocessing import ProcessingPool as Pool
-import tracemalloc
+#import tracemalloc
 import time
 from pathos.threading import ThreadPool
 import itertools
 from functools import partial
 from datetime import datetime
 from indicators import Signal, candle_df
-import getSignals as getSignals
+import getSignals
+
+candles = pd.read_csv(symbol + "-1m-data.csv", sep=',').drop(columns=['lastSize','turnover','homeNotional','foreignNotional'])
 
 symbol = "XBTUSD"
-candles = pd.read_csv(symbol + "-1m-data.csv", sep=',')
-candleamount = 10
-#e_candles = candle_df(candles, candleamount)
-#print(candles)
+candleamount = 100
 
 def backtest_strategy(candleamount, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}, symbol=symbol): #trade= long, short, dynamic
-    atr = pd.Series
+    atrseries = pd.Series(dtype=np.uint16)
     signals = pd.DataFrame()
-    keltner_signals = pd.Series()
-    engulf_signals = pd.Series()
+    keltner_signals = pd.Series(dtype=object)
+    engulf_signals = pd.Series(dtype=object)
     #print(signal_params)
     kperiod = signal_params['kperiod']
     ksma = signal_params['ksma']
@@ -76,8 +75,6 @@ def backtest_strategy(candleamount, capital = 1000, signal_params = {'keltner': 
     stopPrice=0
     stopType="atr"
 
-    print(candle_data['atr'])
-    time.sleep(10000)
     for idx, data in candle_data.iterrows():
         #We do not have ATR data at the start of back-test (unless we look further back, which will not improve our accuracy by much)
             #So, if we do not have ATR (w/ fillna it makes it 0), we set dummy data for the ATR
@@ -168,7 +165,7 @@ def backtest_strategy(candleamount, capital = 1000, signal_params = {'keltner': 
         visual_data.loc[idx] = [data['timestamp'], capital]
 
     currentTime = datetime.now().strftime("%Y%m%d-%H%M")
-    backtestfile = Path("BacktestData",currentTime + "_ATR" + str(atrperiod) + "_KP" + str(kperiod) + "_KSMA" + str(ksma) + ".txt")
+    backtestfile = 'BacktestData//' + symbol + '//' + currentTime + "_ATR" + str(atrperiod) + "_KP" + str(kperiod) + "_KSMA" + str(ksma) + ".txt"
     f = open(backtestfile, "a")
     f.write('\n---------------------------')
     f.write('\n---- BACKTEST COMPLETE ----')
@@ -278,6 +275,7 @@ saveIndicators(combinations, candleamount=candleamount)
 
 ###create multithread pool w/ number of threads being number of combinations###
 #print("thread amount:", len(params_to_try))
+print("e")
 pool = ThreadPool(len(params_to_try))
 #pool.uimap(lambda signal_params, : saveIndicators(combinations=combinations), params_to_try)
 results = pool.uimap(lambda signal_params, : backtest_strategy(candleamount, signal_params=signal_params), params_to_try)

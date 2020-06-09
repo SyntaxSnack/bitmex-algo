@@ -18,48 +18,44 @@ from datetime import datetime
 import indicators as ind
 import os.path
 from os import path
+import backtest as backtest
 
-
-
-candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
 t_symbol = None
 t_e_candles = pd.DataFrame()
 t_candleamount = None
 
 def saveATR(candleamount, params=[], fillna=True, symbol='XBTUSD'):
     for i in params:
-        if path.exists('IndicatorData//' + symbol + '//ATR//' + "p" + str(i) + ".csv"):
-              continue      
-        df = ind.atrseries(candles, candleamount, i)
+        if path.exists('IndicatorData//' + t_symbol + '//ATR//' + "p" + str(i) + '.csv'):
+            return 
+        df = ind.atrseries(backtest.candles, candleamount, i)
         print(df)
         df.to_csv('IndicatorData//' + symbol + '//ATR//' + "p" + str(i) + ".csv", mode='w')
-
+    return
 def saveKeltnerBands(candleamount, params=[], symbol='XBTUSD'):
-    
-
     for i in params:
         if path.exists('IndicatorData//' + symbol + '//Keltner//' + "BANDS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv'):
             continue
-        df = ind.get_keltner_bands(candles, candleamount=candleamount, kperiod=i[0], ksma=i[1])
+        df = ind.get_keltner_bands(backtest.candles, candleamount=candleamount, kperiod=i[0], ksma=i[1])
         print(df)
         df.to_csv('IndicatorData//' + symbol + '//Keltner//' + "BANDS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv', mode='w')
-
+    return
 def saveKeltnerSignals(candleamount, params=[], symbol='XBTUSD'):
-
     for i in params:
         if path.exists('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv'):
             continue
-        signals =  ind.get_keltner_signals(candles, candleamount=candleamount, kperiod=i[0], ksma=i[1])
-        df = pd.Series(signals)
+        signals =  ind.get_keltner_signals(backtest.candles, candleamount=candleamount, kperiod=i[0], ksma=i[1])
+        df = pd.Series(signals, dtype=object)
         print(df)
         df.to_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv', mode='w', index=False)
+    return
 
 def saveEngulf_thread(params):
     if path.exists('IndicatorData//' + t_symbol + '//Engulfing//' + "SIGNALS_t" + str(params[0]) + "_ignoredoji" + str(params[1]) + '.csv'):
         return
               
     signals = ind.get_engulf_signals(t_e_candles, t_candleamount, params)
-    df = pd.Series(signals)
+    df = pd.Series(signals, dtype=object)
     df.to_csv('IndicatorData//' + t_symbol + '//Engulfing//' + "SIGNALS_t" + str(params[0]) + "_ignoredoji" + str(params[1]) + '.csv', mode='w', index=False)
     return("thread-done")
 
@@ -67,7 +63,7 @@ def saveEngulfingSignals(candleamount, params=[], symbol='XBTUSD'):
     global t_e_candles
     global t_symbol
     global t_candleamount
-    t_e_candles = ind.candle_df(candles, candleamount)
+    t_e_candles = ind.candle_df(backtest.candles, candleamount)
     t_symbol = symbol
     t_candleamount = candleamount
     epool = ThreadPool()

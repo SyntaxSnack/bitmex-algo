@@ -4,6 +4,7 @@ BTUSD-1m-data.csv
 __pycache__
 bitmex_ws/__pycache__
 util/__pycache__
+.DS_Store
 
 #exclude data in all data directories
 BacktestData/*
