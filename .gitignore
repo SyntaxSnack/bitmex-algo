@@ -7,14 +7,14 @@ util/__pycache__
 .DS_Store
 
 #exclude data in all data directories
-BacktestData/XBTUSD
-BacktestData/ETHUSD
-IndicatorData/XBTUSD
-IndicatorData/ETHUSD
-OrderbookData/XBTUSD
-OrderbookData/ETHUSD
-Plotting/XBTUSD
-Plotting/ETHUSD
+BacktestData/XBTUSD/*
+BacktestData/ETHUSD/*
+IndicatorData/XBTUSD/*
+IndicatorData/ETHUSD/*
+OrderbookData/XBTUSD/*
+OrderbookData/ETHUSD/*
+Plotting/XBTUSD/*
+Plotting/ETHUSD/*
 
 #exception for .gitkeep file to preserve data directories
 !BacktestData/XBTUSD/.gitkeep
