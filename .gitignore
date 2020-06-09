@@ -9,8 +9,12 @@ util/__pycache__
 #exclude data in all data directories
 BacktestData/XBTUSD/*
 BacktestData/ETHUSD/*
-IndicatorData/XBTUSD/*
-IndicatorData/ETHUSD/*
+IndicatorData/XBTUSD/ATR/*
+IndicatorData/XBTUSD/Engulfing/*
+IndicatorData/XBTUSD/Keltner/*
+IndicatorData/ETHUSD/ATR/*
+IndicatorData/ETHUSD/Engulfing/*
+IndicatorData/ETHUSD/Keltner/*
 OrderbookData/XBTUSD/*
 OrderbookData/ETHUSD/*
 Plotting/XBTUSD/*
@@ -19,8 +23,12 @@ Plotting/ETHUSD/*
 #exception for .gitkeep file to preserve data directories
 !BacktestData/XBTUSD/.gitkeep
 !BacktestData/ETHUSD/.gitkeep
-!IndicatorData/XBTUSD/.gitkeep
-!IndicatorData/ETHUSD/.gitkeep
+!IndicatorData/XBTUSD/ATR/.gitkeep
+!IndicatorData/XBTUSD/Engulfing/.gitkeep
+!IndicatorData/XBTUSD/Keltner/.gitkeep
+!IndicatorData/ETHUSD/ATR/.gitkeep
+!IndicatorData/ETHUSD/Engulfing/.gitkeep
+!IndicatorData/ETHUSD/Keltner/*
 !OrderbookData/XBTUSD/.gitkeep
 !OrderbookData/ETHUSD/.gitkeep
 !Plotting/XBTUSD/.gitkeep
