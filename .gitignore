@@ -1,8 +1,22 @@
-OrderbookData/ETHUSD/trades.csv
-OrderbookData/XBTUSD/trades.csv
 ETHUSD-1m-data.csv
 BTUSD-1m-data.csv
 .vscode
 __pycache__
 bitmex_ws/__pycache__
 util/__pycache__
+
+#exclude data in all data directories
+BacktestData/*
+IndicatorData/*
+OrderbookData/*
+Plotting/*
+
+#exception for .gitkeep file to preserve data directories
+!BacktestData/XBTUSD/.gitkeep
+!BacktestData/ETHUSD/.gitkeep
+!IndicatorData/XBTUSD/.gitkeep
+!IndicatorData/ETHUSD/.gitkeep
+!OrderbookData/XBTUSD/.gitkeep
+!OrderbookData/ETHUSD/.gitkeep
+!Plotting/XBTUSD/.gitkeep
+!Plotting/ETHUSD/.gitkeep
