@@ -94,13 +94,16 @@ def get_engulf_signals(e_candles, candleamount, params):
     global signals
     global prev_row
     prev_row = e_candles[0]
-    epool = ThreadPool()
     threshold = np.repeat(params[0], len(e_candles))
     ignoredoji = np.repeat(params[1], len(e_candles))
-    results = epool.uimap(engulfingsignals, e_candles, threshold, ignoredoji)
+    results = []
+    for i in range(len(e_candles)):
+        #print(engulfingsignals(e_candles[i], threshold[i], ignoredoji[i]))
+        results.append(engulfingsignals(e_candles[i], threshold[i], ignoredoji[i]))
+    #results = epool.uimap(engulfingsignals, e_candles, threshold, ignoredoji)
     print("Computing engulfing signals with given params for all candles multithreaded...")
     result = list(results)
-    print(results)
+    #print(results)
     return(result)
 
 def keltner(candles, candleamount, kperiod, ksma):

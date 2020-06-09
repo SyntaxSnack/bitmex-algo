@@ -140,6 +140,7 @@ Signal.WAIT
 Signal.WAIT
 Signal.WAIT
 Signal.WAIT
+Signal.BUY
 Signal.WAIT
 Signal.WAIT
 Signal.BUY
@@ -1437,5 +1438,4 @@ Signal.WAIT
 Signal.WAIT
 Signal.BUY
 Signal.WAIT
-Signal.BUY
 Signal.BUY

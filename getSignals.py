@@ -48,6 +48,7 @@ def saveEngulf_thread(params):
     return("thread-done")
 
 def saveEngulfingSignals(candleamount, params=[], symbol='XBTUSD'):
+    start = time.time()
     global t_e_candles
     global t_symbol
     global t_candleamount
@@ -60,6 +61,9 @@ def saveEngulfingSignals(candleamount, params=[], symbol='XBTUSD'):
     #DO NOT REMOVE THIS PRINT, IT IS NEEDED TO FINISH THE MULTITHREAD
     result = list(results)
     print(result)
+    end = time.time()
+    print(end - start)
+    return(result)
     return(result)
 #Examples
 #saveKeltnerBands(100, [10,1], [True, False])

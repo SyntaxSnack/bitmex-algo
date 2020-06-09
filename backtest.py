@@ -220,7 +220,7 @@ ksma_v = [True]
 keltner_v = [True]
 #ENGULFING CANDLES
 engulf_v = [True]
-engulfthreshold_v = [.5, .75 , 1]
+engulfthreshold_v = [.5, .75 , 1, 1.5, 2, 3, 4]
 ignoredoji_v = [True,False]
 #TRADE TYPES
 trade_v = ['dynamic', 'long']
