@@ -51,7 +51,7 @@ def candle_df(candles, candleamount):
     results = cpool.uimap(candle_df_thread, indices, data)
     print("Computing candlestick dataframe for given params with candles multithreaded...")
     result = list(results)
-    print(result)
+    print(results)
     return(result)
 
 #realtime func
@@ -95,12 +95,12 @@ def get_engulf_signals(e_candles, candleamount, params):
     global prev_row
     prev_row = e_candles[0]
     epool = ThreadPool()
-    threshold = np.repeat(params[0], len(e_candles))    
-    ignoredoji = np.repeat(params[0], len(e_candles))    
+    threshold = np.repeat(params[0], len(e_candles))
+    ignoredoji = np.repeat(params[1], len(e_candles))
     results = epool.uimap(engulfingsignals, e_candles, threshold, ignoredoji)
     print("Computing engulfing signals with given params for all candles multithreaded...")
     result = list(results)
-    print(result)
+    print(results)
     return(result)
 
 def keltner(candles, candleamount, kperiod, ksma):
