@@ -20,9 +20,9 @@ import getSignals as getSignals
 
 symbol = "XBTUSD"
 candles = pd.read_csv(symbol + "-1m-data.csv", sep=',')
+candleamount = 1440
+#e_candles = candle_df(candles, candleamount)
 #print(candles)
-candleamount = 140
-candles = candle_df(candles, candleamount)
 
 def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}, symbol=symbol): #trade= long, short, dynamic
     atr = pd.Series
@@ -38,37 +38,35 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
     posmult = signal_params['posmult']
     candle_data = candles.tail(candleamount)
 
-    if(signal_params['keltner'] == True):
-        keltner_signals = pd.read_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(signal_params['kperiod']) + '_sma' + str(signal_params['ksma']) + '.csv', sep=',')
-        #print("KELTNER SIGNALS", signals.groupby('keltner'))
-
-    if(signal_params['engulf'] == True):
+    if (signal_params['keltner'] == True) and (signal_params['engulf'] == True):
         engulf_signals = pd.read_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(signal_params['engulfthreshold']) + '_ignoredoji' + str(signal_params['ignoredoji']) + '.csv', sep=',')
-
-    
+        keltner_signals = pd.read_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(signal_params['kperiod']) + '_sma' + str(signal_params['ksma']) + '.csv', sep=',')
+        signals = pd.concat([engulf_signals, keltner_signals], axis=1)
+        signals.columns = ["E", "K"]    
+        signals['S'] = np.where((signals['E'] == signals['K']), Signal(0), signals['E'])
+    elif(signal_params['keltner'] == True):
+        keltner_signals = pd.read_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(signal_params['kperiod']) + '_sma' + str(signal_params['ksma']) + '.csv', sep=',')
+        signals['S'] = keltner_signals
+        #print("KELTNER SIGNALS", signals.groupby('keltner'))
+    elif(signal_params['engulf'] == True):
+        engulf_signals = pd.read_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(signal_params['engulfthreshold']) + '_ignoredoji' + str(signal_params['ignoredoji']) + '.csv', sep=',')
+        signals['S'] = engulf_signals
     atrseries = pd.read_csv('IndicatorData//' + symbol + "//ATR//" + "p" + str(atrperiod) + '.csv', sep=',')
 
-    signals = pd.concat([keltner_signals, engulf_signals], axis=1)
-    print(signals)
-    signals.columns = ["keltner", "keltner"]
     signal_len = len(signals.loc[0])
-
     candle_data = candle_data.reset_index(drop=True)
     candle_data = pd.DataFrame.join(candle_data, atrseries)
-    candle_data = pd.DataFrame.join(candle_data, signals)   #COMBINE SIGNALS AND CANDLE DATA
+    candle_data = pd.DataFrame.join(candle_data, signals['S'])   #COMBINE SIGNALS AND CANDLE DATA
     #print("CANDLE DATA")
     #print(candle_data)
-    print(signals)
-    print(candle_data)
     
-
     visual_data = pd.DataFrame(columns= ['timestamp', 'capital'])
     entry_price = 0
     profit = 0
     currentTime = datetime.now().strftime("%Y%m%d-%H%M")
     signals.to_csv('BacktestData//Signals//' + currentTime + '.csv')
     position_size = .1
-    position_amount = capital * position_size
+    position_amount = 0
     static_position_amount = capital * position_size
     fee = position_amount * 0.00075
     have_pos = False
@@ -76,7 +74,13 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
     stop=False
     stopPrice=0
     stopType="atr"
-    for idx, data in candle_data.tail(candleamount).iterrows():
+
+    for idx, data in candle_data.iterrows():
+        #We do not have ATR data at the start of back-test (unless we look further back, which will not improve our accuracy by much)
+            #So, if we do not have ATR (w/ fillna it makes it 0), we set dummy data for the ATR
+        if(data['atr']==0):
+            data['atr']=1
+        data['atr']=0
         long=True
         short=True
         if(trade=="long"):
@@ -85,12 +89,14 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
         elif(trade=="short"):
             long=False
             short=True
-        if (entry_price != 0 and stopPrice != 0):
+        if(entry_price != 0 and stopPrice != 0):
             if(((position_amount > 0) and (data['open'] < stopPrice)) or (((position_amount < 0)) and (data['open'] > stopPrice))):
                 stop=True
                 print("!!!!!! STOP PRICE HIT !!!!!!")
+                print("Price:", data['open'])
                 print("ATR stop threshold: ", data['atr']*50)
-        if((all([v == Signal.BUY for v in data[-signal_len:]])) or (stop and position_amount < 0)):
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        if(data[-signal_len:]['S'] == "Signal.BUY") or (stop and position_amount < 0):
             if((short and have_pos) and (position_amount < 0)):
             #short is only a constant parameter to determine if we are shorting at all
             #position_amount determines if we are currently short or long
@@ -106,7 +112,7 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
                 entry_price = 0
                 have_pos = False
                 stop = False
-            elif(data['close'] > entry_price):
+            elif(data['close'] > entry_price or entry_price==0):
                 entry_price = data['close']
                 if(stopType == "atr"): #and if we already have a position, our stop moves up to reflect second entry
                     stopPrice = entry_price - data['atr']*50
@@ -124,7 +130,8 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
                 print("Current position:", position_amount)
                 print("############################")
                 have_pos = True
-        elif(all([v == Signal.SELL for v in data[-signal_len:]]) or (stop and position_amount > 0)):
+
+        elif(data[-signal_len:]['S'] == "Signal.SELL") or (stop and position_amount > 0):
             if((long and have_pos) and (position_amount > 0)):
                 profit = position_amount * ((data['open'] - entry_price)/entry_price)
                 capital += profit
@@ -186,7 +193,7 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
     f.write("\nTrade Type: ")
     f.write(trade)
     f.write('\n---------------------------\n')
-    visual_data.to_csv('Plotting//' + currentTime + '.csv')
+    visual_data.to_csv('Plotting//' + symbol + '//' + currentTime + '.csv')
 
     visualize_trades(visual_data, currentTime)
 
@@ -203,7 +210,7 @@ def visualize_trades(df, currentTime):
     dates = matplotlib.dates.date2num(l)
     matplotlib.pyplot.plot_date(dates, values,'-b')
     plt.xticks(rotation=90)
-    plt.savefig('Plotting//'+ currentTime + '.png')
+    plt.savefig('Plotting//'+ symbol + '//' + currentTime + '.png')
 
 #ATR
 atrperiod_v = [5,50]
@@ -227,6 +234,7 @@ params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] 
 #params_to_try = [{'keltner': True, 'engulf': True, 'kperiod': 30, 'ksma': True, 'atrperiod': 5, 'ignoredoji': True, 'engulfthreshold': 1, 'trade': 'dynamic', 'posmult': 32}]
 
 def genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v):
+    print('genIndicators')
     #Generate set of unique Keltner values
     kelt_df = pd.DataFrame(keltner_params)
     kelt_pairs = set()
@@ -245,10 +253,10 @@ def genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v):
     engulf_pairs = list(engulf_pairs)
     atr_pairs = list(set(atrperiod_v))
 
-    getSignals.saveKeltnerBands(candleamount, params=keltner_pairs)
-    getSignals.saveKeltnerSignals(candleamount, params=keltner_pairs)
-    getSignals.saveEngulfingSignals(candleamount, params=engulf_pairs)
-    getSignals.saveATR(candleamount, params=atr_pairs)
+    #getSignals.saveKeltnerBands(candleamount, params=keltner_pairs)
+    #getSignals.saveKeltnerSignals(candleamount, params=keltner_pairs)
+    getSignals.saveEngulfingSignals(candleamount, params=list(engulf_pairs))
+    #getSignals.saveATR(candleamount, params=atr_pairs)
 
 def saveIndicators(combinations, candleamount=candleamount):
     atrperiod_v = [l[0] for l in combinations]
@@ -256,14 +264,13 @@ def saveIndicators(combinations, candleamount=candleamount):
     ksma_v = [l[2] for l in combinations]
     keltner_params = [kperiod_v, ksma_v]
     engulf_params = [engulfthreshold_v, ignoredoji_v]
-    print('got here')
+    print('saveIndicators')
     genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v)
 
 #example of generating all indicators for defined params for a specific length of time
     #they go into Indicators/ folder, saved a csv by their parameters
         #ATRs = p<period>.csv
         #Keltners = kp<kperiod>_sma<ksma=True|False>.csv
-print("got here")
 saveIndicators(combinations, candleamount=candleamount)
 
 ###create multithread pool w/ number of threads being number of combinations###
@@ -272,4 +279,4 @@ saveIndicators(combinations, candleamount=candleamount)
 #pool.uimap(lambda signal_params, : saveIndicators(combinations=combinations), params_to_try)
 #results = pool.u  imap(lambda signal_params, : backtest_strategy(signal_params=signal_params), params_to_try)
 #print("THE BEST SIGNALS ARE", max(list(results), key=lambda x:x[1]))
-backtest_strategy(candleamount, signal_params=params_to_try[0])
+#backtest_strategy(candleamount, signal_params=params_to_try)

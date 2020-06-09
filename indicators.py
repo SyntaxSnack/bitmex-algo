@@ -24,37 +24,54 @@ class Signal(Enum):
 XBTUSD = .5
 ETHUSD = .05
 MIN_IN_DAY = 1440
-    
+candle_data = []
+signals=[]
+
+prev_row = None
+
+def candle_df_thread(index, data):
+    if data[2] < data[3]:
+        type = "green"
+    elif data[2] > data[3]:
+        type = "red"
+    else:
+        type = "abs_doji"
+    #append size
+    candle_data = [data[0], data[1], data[2],data[3], data[4], abs(data[2]-data[3]), type]
+    return(candle_data)
+
 def candle_df(candles, candleamount):
-    candle_data = pd.DataFrame(columns=['timestamp', 'open', 'close','high', 'low', 'candle size', 'type'])
+    print("candle_df")
     # iterate over rows with iterrows()
-    for index, data in candles.tail(candleamount).iterrows():
-        #determine if candles are of opposite type
-        if data['open'] < data['close']:
-            type = "green"
-        elif data['open'] > data['close']:
-            type = "red"
-        else:
-            type = "abs_doji"
-     #append size
-        candle_data.loc[index] = [data['timestamp'], data['open'], data['close'],data['high'], data['low'], abs(data['open']-data['close']), type]
-    return candle_data
+    cpool = ThreadPool()
+    #for index, data in candles.tail(candleamount).iterrows():
+        #candle_df_thread(index, data)
+    indices = candles.tail(candleamount).index.values.tolist()
+    data = candles.tail(candleamount).values.tolist()
+    results = cpool.uimap(candle_df_thread, indices, data)
+    print("Computing candlestick dataframe for given params with candles multithreaded...")
+    result = list(results)
+    print(result)
+    return(result)
 
 #realtime func
-def engulfingsignals(curr_row, prev_row, threshold = 1, ignoredoji = False):
-    print(curr_row)
-    if curr_row['type'] == prev_row['type']: #candle type stays the same
-        return Signal.WAIT
-    elif (curr_row['candle size'] * threshold) > (prev_row['candle size']) and (ignoredoji == False or prev_row['candle size'] > XBTUSD): # candle is opposite direction and larger
-        if curr_row['type'] == "red":
+def engulfingsignals(curr_row, threshold, ignoredoji):
+    global prev_row
+    if curr_row[6] == prev_row[6]: #candle type stays the same
+        signals = Signal.WAIT
+    elif (curr_row[5] * threshold) > (prev_row[5]) and (ignoredoji == False or prev_row[5] > XBTUSD): # candle is opposite direction and larger
+        if curr_row[6] == "red":
            # print("SELLLLL")
-            return Signal.SELL
-        elif curr_row['type'] == "green":
+            signals = Signal.SELL
+        elif curr_row[6] == "green":
            # print("BUUYYYYY")
-            return Signal.BUY
-        else: return Signal.WAIT
+            signals = Signal.BUY
+        else:
+            signals = Signal.WAIT
     else:
-        return Signal.WAIT
+        signals = Signal.WAIT
+    prev_row = curr_row
+    return(signals)
 
 def keltnersignals(row):
     #print(type(row[1]), row[1][1])
@@ -73,16 +90,18 @@ def atrseries(candles, candleamount, period, fillna=True):
     return(series)
 
 #back-test on the series extrapolated from price data
-def get_engulf_signals(e_candles, candleamount = MIN_IN_DAY, threshold=1, ignoredoji=False):
-    #first generate a candle-series!
-    #candles = candle_df(candles, candleamount)
-    signals=[Signal.WAIT]
-    #generate a trade signal for every candle except for the last, and store in the list we created
-    prev_row = e_candles.iloc[0]
-    for i,row in e_candles.tail(candleamount).iloc[1:].iterrows():
-        signals.append(engulfingsignals(row, prev_row, threshold, ignoredoji))
-        prev_row = row
-    return signals
+def get_engulf_signals(e_candles, candleamount, params):
+    global signals
+    global prev_row
+    prev_row = e_candles[0]
+    epool = ThreadPool()
+    threshold = np.repeat(params[0], len(e_candles))    
+    ignoredoji = np.repeat(params[0], len(e_candles))    
+    results = epool.uimap(engulfingsignals, e_candles, threshold, ignoredoji)
+    print("Computing engulfing signals with given params for all candles multithreaded...")
+    result = list(results)
+    print(result)
+    return(result)
 
 def keltner(candles, candleamount, kperiod, ksma):
     candles = candles.tail(candleamount)
@@ -95,7 +114,6 @@ def get_keltner_signals(candles, candleamount = MIN_IN_DAY, kperiod=10, threshol
     kseries["hband"] = indicator_kelt.keltner_channel_hband_indicator()
     kseries["lband"] = indicator_kelt.keltner_channel_lband_indicator()
     signals=[]
-
     for i,row in kseries.tail(candleamount).iterrows():
         signals.append(keltnersignals(row))
     return signals

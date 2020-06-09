@@ -18,7 +18,9 @@ from datetime import datetime
 import indicators as ind
 
 candles = pd.read_csv("XBTUSD-1m-data.csv", sep=',')
-print(candles)
+t_symbol = None
+t_e_candles = pd.DataFrame()
+t_candleamount = None
 
 def saveATR(candleamount, params=[], fillna=True, symbol='XBTUSD'):
     for i in params:
@@ -39,14 +41,26 @@ def saveKeltnerSignals(candleamount, params=[], symbol='XBTUSD'):
         print(df)
         df.to_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv', mode='w', index=False)
 
-def saveEngulfingSignals(candleamount, params=[], symbol='XBTUSD'):
-    e_candles = ind.candle_df(candles, candleamount)
-    for i in params:
-        signals = ind.get_engulf_signals(e_candles, candleamount, threshold=i[0], ignoredoji=i[1])
-        df = pd.Series(signals)
-        print(df)
-        df.to_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(i[0]) + "_ignoredoji" + str(i[1]) + '.csv', mode='w', index=False)
+def saveEngulf_thread(params):
+    signals = ind.get_engulf_signals(t_e_candles, t_candleamount, params)
+    df = pd.Series(signals)
+    df.to_csv('IndicatorData//' + t_symbol + '//Engulfing//' + "SIGNALS_t" + str(params[0]) + "_ignoredoji" + str(params[1]) + '.csv', mode='w', index=False)
+    return("thread-done")
 
+def saveEngulfingSignals(candleamount, params=[], symbol='XBTUSD'):
+    global t_e_candles
+    global t_symbol
+    global t_candleamount
+    t_e_candles = ind.candle_df(candles, candleamount)
+    t_symbol = symbol
+    t_candleamount = candleamount
+    epool = ThreadPool()
+    results = epool.uimap(saveEngulf_thread, params)
+    print("Computing engulfing signals for all params multithreaded...")
+    #DO NOT REMOVE THIS PRINT, IT IS NEEDED TO FINISH THE MULTITHREAD
+    result = list(results)
+    print(result)
+    return(result)
 #Examples
 #saveKeltnerBands(100, [10,1], [True, False])
 #saveATR(100, [1,20,30])
