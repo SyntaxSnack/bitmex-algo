@@ -20,15 +20,16 @@ import getSignals as getSignals
 
 symbol = "XBTUSD"
 candles = pd.read_csv(symbol + "-1m-data.csv", sep=',')
-candleamount = 1440
+candleamount = 10
 #e_candles = candle_df(candles, candleamount)
 #print(candles)
 
-def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}, symbol=symbol): #trade= long, short, dynamic
+def backtest_strategy(candleamount, capital = 1000, signal_params = {'keltner': True, 'engulf':True,  'kperiod':40, 'ksma':True, 'atrperiod':30, 'ignoredoji':False, 'engulfthreshold': 1, 'trade':"dynamic"}, symbol=symbol): #trade= long, short, dynamic
     atr = pd.Series
     signals = pd.DataFrame()
     keltner_signals = pd.Series()
     engulf_signals = pd.Series()
+    #print(signal_params)
     kperiod = signal_params['kperiod']
     ksma = signal_params['ksma']
     atrperiod = signal_params['atrperiod']
@@ -63,8 +64,8 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
     visual_data = pd.DataFrame(columns= ['timestamp', 'capital'])
     entry_price = 0
     profit = 0
-    currentTime = datetime.now().strftime("%Y%m%d-%H%M")
-    signals.to_csv('BacktestData//Signals//' + currentTime + '.csv')
+    #currentTime = datetime.now().strftime("%Y%m%d-%H%M")
+    #signals.to_csv('BacktestData//Signals//' + currentTime + '.csv')
     position_size = .1
     position_amount = 0
     static_position_amount = capital * position_size
@@ -75,12 +76,13 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
     stopPrice=0
     stopType="atr"
 
+    print(candle_data['atr'])
+    time.sleep(10000)
     for idx, data in candle_data.iterrows():
         #We do not have ATR data at the start of back-test (unless we look further back, which will not improve our accuracy by much)
             #So, if we do not have ATR (w/ fillna it makes it 0), we set dummy data for the ATR
         if(data['atr']==0):
             data['atr']=1
-        data['atr']=0
         long=True
         short=True
         if(trade=="long"):
@@ -165,6 +167,7 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
                 capital -= fee
         visual_data.loc[idx] = [data['timestamp'], capital]
 
+    currentTime = datetime.now().strftime("%Y%m%d-%H%M")
     backtestfile = Path("BacktestData",currentTime + "_ATR" + str(atrperiod) + "_KP" + str(kperiod) + "_KSMA" + str(ksma) + ".txt")
     f = open(backtestfile, "a")
     f.write('\n---------------------------')
@@ -193,9 +196,9 @@ def backtest_strategy(candleamount=candleamount, capital = 1000, signal_params =
     f.write("\nTrade Type: ")
     f.write(trade)
     f.write('\n---------------------------\n')
-    visual_data.to_csv('Plotting//' + symbol + '//' + currentTime + '.csv')
+    #visual_data.to_csv('Plotting//' + symbol + '//' + currentTime + '.csv')
 
-    visualize_trades(visual_data, currentTime)
+   # visualize_trades(visual_data, currentTime)
 
     return [signal_params, capital]
 
@@ -253,10 +256,10 @@ def genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v):
     engulf_pairs = list(engulf_pairs)
     atr_pairs = list(set(atrperiod_v))
 
-    #getSignals.saveKeltnerBands(candleamount, params=keltner_pairs)
-    #getSignals.saveKeltnerSignals(candleamount, params=keltner_pairs)
+    getSignals.saveKeltnerBands(candleamount, params=keltner_pairs)
+    getSignals.saveKeltnerSignals(candleamount, params=keltner_pairs)
     getSignals.saveEngulfingSignals(candleamount, params=list(engulf_pairs))
-    #getSignals.saveATR(candleamount, params=atr_pairs)
+    getSignals.saveATR(candleamount, params=atr_pairs)
 
 def saveIndicators(combinations, candleamount=candleamount):
     atrperiod_v = [l[0] for l in combinations]
@@ -275,8 +278,8 @@ saveIndicators(combinations, candleamount=candleamount)
 
 ###create multithread pool w/ number of threads being number of combinations###
 #print("thread amount:", len(params_to_try))
-#pool = ThreadPool(len(params_to_try))
+pool = ThreadPool(len(params_to_try))
 #pool.uimap(lambda signal_params, : saveIndicators(combinations=combinations), params_to_try)
-#results = pool.u  imap(lambda signal_params, : backtest_strategy(signal_params=signal_params), params_to_try)
-#print("THE BEST SIGNALS ARE", max(list(results), key=lambda x:x[1]))
-#backtest_strategy(candleamount, signal_params=params_to_try)
+results = pool.uimap(lambda signal_params, : backtest_strategy(candleamount, signal_params=signal_params), params_to_try)
+print("THE BEST SIGNALS ARE", max(list(results), key=lambda x:x[1]))
+#backtest_strategy(candleamount, signal_params=params_to_try[0])
