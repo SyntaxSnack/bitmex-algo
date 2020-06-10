@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# IMPORTS
+#IMPORTS
 import pandas as pd
 from bitmex import bitmex
 import requests, json
@@ -17,11 +17,45 @@ from tqdm import tqdm_notebook #(Optional, used for progress-bars)
 load_dotenv()
 
 #create the bitmex client object
-bitmex_client = bitmex(test=os.getenv("TESTNET"), api_key=os.getenv("bitmex_api_key"), api_secret=os.getenv("bitmex_api_secret"))
+bitmex_client = None
+
+########### Methods worthy of noting ###########
+##CONVERTING TIME TO TZ AWARE OBJECT
+#convert the time string to a datetime object
+#dt_str = "5/30/2020 4:05:03:10:10"
+#unaware_est = datetime.strptime(dt_str,"%m/%d/%Y %H:%M:%S+00:00")
+# make it a timezone-aware datetime object 
+#est_time = pytz.timezone('US/Eastern').localize(unaware_est, is_dst=None)
+
+##Public method to fetch price data
+#ether = requests.get("https://testnet.bitmex.com/api/v1/orderBook/L2?symbol=ETHUSD&depth=1").json()
+#xbt = requests.get("https://testnet.bitmex.com/api/v1/orderBook/L2?symbol=xbt&depth=1").json()
+#ether_ask_price = ether[0]['price']
+#ether_bid_price = ether[1]['price']
+#print(ether_ask_price)
+#print(ether_bid_price)
+################################################
+######### Example of creating an order #########
+#symbol = 'XBTUSD'
+#qty = -1
+#price = ether[1]['price']
+#order_result = bitmex_client.Order.Order_new(symbol=symbol, orderQty=qty, price=price).result()
+#print(order_result)
+##Storing existing orders
+#orders = bitmex_client.Order.Order_getOrders().result()[0]
+#for order in orders:
+    #print(order)
+    #processed_order = {}
+    #processed_order["symbol"] = order["symbol"]
+    #processed_order["amount"] = str(order["orderQty"]).split("L")[0]
+    #processed_order["price"] = order["price"]
+    #processed_order["side"] = order["side"]
+    #processed_order["status"] = order["ordStatus"]
+    #print(processed_order)
+################################################
 
 #converts start_time and end_time to datetime objects
 def get_datetimes(symbol, kline_size, start_time, end_time, data, source):
-
     #if len(data) > 0:  old = parser.parse(data["timestamp"].iloc[-1]).replace(tzinfo=None)
     if source == "binance":
         if start_time == None:
@@ -80,50 +114,9 @@ def get_all_bitmex(symbol, kline_size, start_time, end_time, save = False):
     print('All caught up..!')
     return data_df
 
-#CONVERTING TIME TO TZ AWARE OBJECT
-# convert the time string to a datetime object
-dt_str = "5/30/2020 4:05:03:10:10"
-#unaware_est = datetime.strptime(dt_str,"%m/%d/%Y %H:%M:%S+00:00")
-# make it a timezone-aware datetime object 
-#est_time = pytz.timezone('US/Eastern').localize(unaware_est, is_dst=None)
-
-#Get timeseries data
-#data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time='29 May 2020', end_time='PRESENT', save=True)
-data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time='1 Jan 2019', end_time='PRESENT', save=True)
-print(data)
-
-#Price data is just public.
-ether = requests.get("https://testnet.bitmex.com/api/v1/orderBook/L2?symbol=ETHUSD&depth=1").json()
-xbt = requests.get("https://testnet.bitmex.com/api/v1/orderBook/L2?symbol=xbt&depth=1").json()
-ether_ask_price = ether[0]['price']
-ether_bid_price = ether[1]['price']
-print(ether_ask_price)
-print(ether_bid_price)
-
-#I think this only works for certain kinds of requests (like those listed here - https://testnet.bitmex.com/api/explorer/)
-#GET /orderBook/L2
-
-xbt = requests.get("https://testnet.bitmex.com/api/v1/orderBook/L2?symbol=xbt&depth=1").json()
-#a = client.Quote.Quote_get(symbol="XBTUSD", startTime=datetime.datetime(2018, 1, 1)).result()
-#print(a)
-
-symbol = 'XBTUSD'
-qty = -1
-price = ether[1]['price']
-
-order_result = bitmex_client.Order.Order_new(symbol=symbol, orderQty=qty, price=price).result()
-print(order_result)
-orders = bitmex_client.Order.Order_getOrders().result()[0]
-
-for order in orders:
-   print(order)
-   processed_order = {}
-   processed_order["symbol"] = order["symbol"]
-   processed_order["amount"] = str(order["orderQty"]).split("L")[0]
-   processed_order["price"] = order["price"]
-   processed_order["side"] = order["side"]
-   processed_order["status"] = order["ordStatus"]
-   print(processed_order)
-#https://testnet.bitmex.com/api/v1/orderBook/L2?symbol=XBT
-
-#Next step is to try creating orders
+def getData():
+    global bitmex_client
+    bitmex_client = bitmex(test=os.getenv("TESTNET"), api_key=os.getenv("bitmex_api_key"), api_secret=os.getenv("bitmex_api_secret"))
+    #Get timeseries data
+    data = get_all_bitmex(symbol="XBTUSD", kline_size="1m", start_time='1 Jan 2019', end_time='PRESENT', save=False)
+    return data

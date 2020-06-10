@@ -18,13 +18,12 @@ from datetime import datetime
 import indicators as ind
 import os.path
 from os import path
-from backtest import candles
 
 t_symbol = None
 t_e_candles = pd.DataFrame()
 t_candleamount = None
 
-def saveATR(candleamount, params=[], fillna=True, symbol='XBTUSD'):
+def saveATR(candles, candleamount, params=[], fillna=True, symbol='XBTUSD'):
     for i in params:
         if path.exists('IndicatorData//' + t_symbol + '//ATR//' + "p" + str(i) + '.csv'):
             return 
@@ -32,7 +31,7 @@ def saveATR(candleamount, params=[], fillna=True, symbol='XBTUSD'):
         print(df)
         df.to_csv('IndicatorData//' + symbol + '//ATR//' + "p" + str(i) + ".csv", mode='w')
     return
-def saveKeltnerBands(candleamount, params=[], symbol='XBTUSD'):
+def saveKeltnerBands(candles, candleamount, params=[], symbol='XBTUSD'):
     for i in params:
         if path.exists('IndicatorData//' + symbol + '//Keltner//' + "BANDS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv'):
             continue
@@ -40,7 +39,7 @@ def saveKeltnerBands(candleamount, params=[], symbol='XBTUSD'):
         print(df)
         df.to_csv('IndicatorData//' + symbol + '//Keltner//' + "BANDS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv', mode='w')
     return
-def saveKeltnerSignals(candleamount, params=[], symbol='XBTUSD'):
+def saveKeltnerSignals(candles, candleamount, params=[], symbol='XBTUSD'):
     for i in params:
         if path.exists('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(i[0]) + "_sma" + str(i[1]) + '.csv'):
             continue
@@ -59,7 +58,7 @@ def saveEngulf_thread(params):
     df.to_csv('IndicatorData//' + t_symbol + '//Engulfing//' + "SIGNALS_t" + str(params[0]) + "_ignoredoji" + str(params[1]) + '.csv', mode='w', index=False)
     return("thread-done")
 
-def saveEngulfingSignals(candleamount, params=[], symbol='XBTUSD'):
+def saveEngulfingSignals(candles, candleamount, params=[], symbol='XBTUSD'):
     global t_e_candles
     global t_symbol
     global t_candleamount
