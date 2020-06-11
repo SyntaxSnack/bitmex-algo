@@ -27,11 +27,11 @@ import os
 symbol = "XBTUSD"
 candleamount = 14400
 ctime = "1m"
+capital = 1000
 visualize=False
 candleData = pd.read_csv(symbol + "-" + ctime + "-data.csv", sep=',').drop(columns=['lastSize','turnover','homeNotional','foreignNotional'])
 
-def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynamic
-    capital=1000
+def backtest_strategy(candleamount, capital, signal_params, candles, symbol=symbol): #trade= long, short, dynamic
     atrseries = pd.Series(dtype=np.uint16)
     signals = pd.DataFrame()
     keltner_signals = pd.Series(dtype=object)
@@ -44,7 +44,7 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
     ignoredoji = signal_params['ignoredoji']
     engulfthreshold = signal_params['engulfthreshold']
     posmult = signal_params['posmult']
-    candle_data = candleData.tail(candleamount)
+    candle_data = candles.tail(candleamount)
 
     if (signal_params['keltner'] == True) and (signal_params['engulf'] == True):
         engulf_signals = pd.read_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(signal_params['engulfthreshold']) + '_ignoredoji' + str(signal_params['ignoredoji']) + '.csv', sep=',')
@@ -286,42 +286,45 @@ params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] 
 check = threading.Condition()
 
 def backtest_mt(params):
+    global candleamount
+    global capital
+    global percision
     saveIndicators(combinations, candleamount=candleamount)
     ###create multithread pool w/ number of threads being number of combinations###
     #pool.uimap(lambda signal_params, : saveIndicators(combinations=combinations), params_to_try)
     #results = pool.uimap(lambda signal_params, : backtest_strategy(candleamount, signal_params=signal_params), params_to_try)
     #result = list(results)
 
-    #thread_count = percision
-    #candleSplice = candleData.tail(candleamount)
-    #candleSplit = list(np.array_split(candleSplice, thread_count))
+    thread_count = percision
+    candleSplice = candleData.tail(candleamount)
+    candleSplit = list(np.array_split(candleSplice, thread_count))
 
-    #params = np.repeat(params, len(params))
-    #rcapital = np.repeat(capital, len(candleSplit))
-    #candleamount = np.repeat(candleamount, len(candleSplit))
+    params = np.repeat(params, len(params))
+    rcapital = np.repeat(capital, len(candleSplit))
+    candleamount = np.repeat(candleamount, len(candleSplit))
 
-    #print("thread amount:", thread_count)
-    #pool = ThreadPool(thread_count)
+    print("thread amount:", thread_count)
+    pool = ThreadPool(thread_count)
     #results = backtest_strategy(candleamount, capital, params, candles=candleData)
     #start = time.time()
-    #results = pool.uimap(backtest_strategy, candleamount, rcapital, params, candleSplit)
-    #result = list(results)
-    #scapital = capital
-    #for i in result:
-    #    capital = capital + capital*((i-scapital)/scapital)
-    #end = time.time()
+    results = pool.uimap(backtest_strategy, candleamount, rcapital, params, candleSplit)
+    result = list(results)
+    scapital = capital
+    for i in result:
+        capital = capital + capital*((i-scapital)/scapital)
+    end = time.time()
     #return(end-start)
-    #return(capital)
+    return(capital)
     #param_data = list(zip(*result))[1]
 
-percision=1
+percision=2
 
 if __name__ == '__main__': 
     with Pool(None) as pool:
         start = time.time()
         print("Running backtest for all given params with multiprocessing...")
         #capital_data = list(zip(*result))[0]
-        res = pool.imap_unordered(backtest_strategy, params_to_try)
+        res = pool.imap_unordered(backtest_mt, params_to_try)
         print(list(res))
         print("Backtest completed for all given params, and all generated data was saved :)")
         end = time.time()

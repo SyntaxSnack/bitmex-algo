@@ -12,16 +12,18 @@ from pathos.multiprocessing import ProcessingPool as Pool
 #import tracemalloc
 import time
 from pathos.threading import ThreadPool
+import dill
 import itertools
 from functools import partial
 from datetime import datetime
 from indicators import Signal, candle_df
 import getSignals as getSignals
 import matplotlib.pyplot
-from multiprocessing import Process, Pool
+from multiprocessing import Process, Pool, Condition, Queue
 from matplotlib import pyplot as plt
 import threading
 import os
+import pickle
 
 #Set data for backtest
 symbol = "XBTUSD"
@@ -30,8 +32,14 @@ ctime = "1m"
 visualize=False
 candleData = pd.read_csv(symbol + "-" + ctime + "-data.csv", sep=',').drop(columns=['lastSize','turnover','homeNotional','foreignNotional'])
 
-def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynamic
-    capital=1000
+def generateTargetPrice(entry_price, trade):
+    if(trade=='short'):
+        return entry_price - entry_price *.02
+    if(trade=='long'):
+        return entry_price + entry_price  *.02
+
+
+def backtest_strategy(candleamount, capital, signal_params, candles, safe, symbol=symbol): #trade= long, short, dynamic
     atrseries = pd.Series(dtype=np.uint16)
     signals = pd.DataFrame()
     keltner_signals = pd.Series(dtype=object)
@@ -44,7 +52,14 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
     ignoredoji = signal_params['ignoredoji']
     engulfthreshold = signal_params['engulfthreshold']
     posmult = signal_params['posmult']
-    candle_data = candleData.tail(candleamount)
+    candle_data = candles
+
+    #start and exit points for multithreading
+    #startpoint = list(candle_data.index)[0]
+    #exitpoint = exitpoints
+    #print("startpoint: ", startpoint)
+    #print("exitpoint: ", exitpoint)
+    #print("range: ", ((exitpoint-startpoint)/2))
 
     if (signal_params['keltner'] == True) and (signal_params['engulf'] == True):
         engulf_signals = pd.read_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(signal_params['engulfthreshold']) + '_ignoredoji' + str(signal_params['ignoredoji']) + '.csv', sep=',')
@@ -62,6 +77,8 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
     atrseries = pd.read_csv('IndicatorData//' + symbol + "//ATR//" + "p" + str(atrperiod) + '.csv', sep=',')
 
     signal_len = len(signals.loc[0])
+    #remove later
+    old_candle_data = candle_data
     candle_data = candle_data.reset_index(drop=True)
     candle_data = pd.DataFrame.join(candle_data, atrseries)
     candle_data = pd.DataFrame.join(candle_data, signals['S'])   #COMBINE SIGNALS AND CANDLE DATA
@@ -82,8 +99,16 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
     stop=False
     stopPrice=0
     stopType="atr"
-
+    
+    #threadData = pd.DataFrame()
+    safe_b = False
     for idx, data in candle_data.iterrows():
+        #multithreading
+        currentpoint = list(old_candle_data.index)[idx]
+        if(safe and safe_b):
+            return(currentpoint)
+        #print("current point: ", currentpoint)
+        #print("thread lock:", threadloc)
         #We do not have ATR data at the start of back-test (unless we look further back, which will not improve our accuracy by much)
             #So, if we do not have ATR (w/ fillna it makes it 0), we set dummy data for the ATR
         if(data['atr']==0):
@@ -119,6 +144,7 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                 entry_price = 0
                 have_pos = False
                 stop = False
+                safe_b = True
             elif(data['close'] > entry_price or entry_price==0):
                 entry_price = data['close']
                 if(stopType == "atr"): #and if we already have a position, our stop moves up to reflect second entry
@@ -129,10 +155,12 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                     position_amount = static_position_amount
                 else:
                     position_amount += posmult*static_position_amount #we only get up to this point if our position is positive
+                #target_price = generateTargetPrice(entry_price, 'long')
                 fee = position_amount*0.00075
                 capital -= fee
                 print("######## LONG ENTRY ########")
                 print("Entry price:", entry_price)
+                #print("Target price:", target_price)
                 print("Stop loss:", stopPrice)
                 print("Current position:", position_amount)
                 print("############################")
@@ -152,6 +180,7 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                 entry_price = 0
                 have_pos = False
                 stop = False
+                safe_b = True
             elif(short and ((data['close'] < entry_price) or entry_price==0)): #only add to position if original position is in profit!
                 entry_price =  data['close']
                 if(stopType == "atr"):
@@ -162,14 +191,21 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                     position_amount = -1*static_position_amount
                 else:
                     position_amount -= posmult*static_position_amount #we only get up to this point if our position is negative
+                #target_price = generateTargetPrice(entry_price, 'short')
                 print("####### SHORT ENTRY ########")
                 print("Entry price:", entry_price)
+                #print("Target Price:", target_price)
                 print("Stop loss:", stopPrice)
                 print("Current position:", position_amount)
                 print("############################")
                 have_pos = True
                 fee = abs(position_amount*0.00075)
                 capital -= fee
+        #elif((currentpoint > (startpoint + ((exitpoint-startpoint)/2)) and threadloc) and have_pos==False):
+        #    lastSafePos = currentpoint
+        #    return([idx, capital_data])
+        #elif((currentpoint > (startpoint + ((exitpoint-startpoint)/2)) and threadloc==False) and have_pos==False):
+        #    return([idx, capital_data])
         capital_data.loc[idx] = [data['timestamp'], capital]
 
     currentTime = datetime.now().strftime("%Y%m%d-%H%M")
@@ -203,10 +239,11 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
     f.write('\n---------------------------\n')
     #capital_data.to_csv('Plotting//' + symbol + '//' + currentTime + '.csv')
 
-    if visualize:
-        visualize_trades(capital_data)
+    #if visualize:
+    #    visualize_trades(capital_data)
 
     print("Backtest for given param completed, and results were saved to Backtest/" + symbol)
+    print("CAPITAL: ", capital)
     return(capital)
 
 def genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v):
@@ -283,48 +320,114 @@ params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] 
         #ATRs = p<period>.csv
         #Keltners = kp<kperiod>_sma<ksma=True|False>.csv
 
-check = threading.Condition()
+#multiprocessing condition
+#check = Condition()
 
+safevalues = []
 def backtest_mt(params):
+    #check.acquire()
+    bt_capital = 1000
     saveIndicators(combinations, candleamount=candleamount)
     ###create multithread pool w/ number of threads being number of combinations###
     #pool.uimap(lambda signal_params, : saveIndicators(combinations=combinations), params_to_try)
     #results = pool.uimap(lambda signal_params, : backtest_strategy(candleamount, signal_params=signal_params), params_to_try)
     #result = list(results)
 
-    #thread_count = percision
-    #candleSplice = candleData.tail(candleamount)
-    #candleSplit = list(np.array_split(candleSplice, thread_count))
+    percision = 2
+    candleSplice = candleData.tail(candleamount)
+    candleSplit = list(np.array_split(candleSplice, percision))
 
-    #params = np.repeat(params, len(params))
-    #rcapital = np.repeat(capital, len(candleSplit))
-    #candleamount = np.repeat(candleamount, len(candleSplit))
+    #generate parameters for multithreading
+    #exitpoints = []
+    #for i in candleSplit:
+    #    exitpoints.append(list(i.index)[-1])
+    safe_candleamount = np.repeat(candleamount, len(candleSplit)).tolist()
+    safe_capital = np.repeat(bt_capital, len(candleSplit)).tolist()
+    safe_params = np.repeat(params, len(candleSplit)).tolist()
+    #safe_threadloc = np.repeat(False, len(candleSplit)/2).tolist()
+    #safe_F_tl = np.repeat(True, len(candleSplit)/2).tolist()
+    #threadloc.extend(F_tl)
 
-    #print("thread amount:", thread_count)
-    #pool = ThreadPool(thread_count)
-    #results = backtest_strategy(candleamount, capital, params, candles=candleData)
-    #start = time.time()
-    #results = pool.uimap(backtest_strategy, candleamount, rcapital, params, candleSplit)
-    #result = list(results)
-    #scapital = capital
-    #for i in result:
-    #    capital = capital + capital*((i-scapital)/scapital)
-    #end = time.time()
-    #return(end-start)
-    #return(capital)
-    #param_data = list(zip(*result))[1]
+    withSafe = np.repeat(True, len(candleSplit)).tolist()
+    withoutSafe = np.repeat(False, len(candleSplit)).tolist()
 
-percision=1
+    print("thread amount:", percision)
+    tpool = ThreadPool(percision)
+    #backtest_strategy(candleamount, capital, params, candles=candleData)
+    start = time.time()
+    #print("ca", len(candleamount))
+    #print("cap", len(capital))
+    #print("params", len(params))
+    #print("Candlesplit len:", len(candleSplit))
+    #print("exitpoints", len(exitpoints))
+    #print("threadloc", len(threadloc))
+    #time.sleep(1000)
+    safe_results = tpool.uimap(backtest_strategy, safe_candleamount, safe_capital, safe_params, candleSplit, withSafe)
+    safe_result = list(safe_results)
+    safePoints = list(np.asarray(sorted(safe_result))+1)
+    print("safe points:", safePoints)
+    firstStart = candleSplice.index[0]
+    firstDistanceSafe = safePoints[0] - firstStart
+    lastDistanceSafe = None
+    candleSafe = []
+    for i in safePoints:
+        print(i)
+        ia = i - firstStart
+        if safePoints.index(i) != 0:
+            print("ia", ia)
+            print("lastDistanceSafe", lastDistanceSafe)
+            candleSafe.append(candleSplice.iloc[lastDistanceSafe:ia])
+            lastDistanceSafe = ia
+        else:
+            candleSafe.append(candleSplice.iloc[:firstDistanceSafe])
+            lastDistanceSafe = firstDistanceSafe
+    candleSafe.append(candleSplice.iloc[lastDistanceSafe:])
+    #print("candleSafe:", candleSafe)
+
+    final_candleamount = np.repeat(candleamount, len(candleSafe)).tolist()
+    final_capital = np.repeat(bt_capital, len(candleSafe)).tolist()
+    final_params = np.repeat(params, len(candleSafe)).tolist()
+    #final_threadloc = np.repeat(False, len(candleSplit)/2).tolist()
+    #final_F_tl = np.repeat(True, len(candleSplit)/2).tolist()
+    #final_threadloc.extend(F_tl)
+
+    #print((final_candleamount))
+    #print((final_capital))
+    #print((final_params))
+    #print((candleSafe))
+    final_results = tpool.uimap(backtest_strategy, final_candleamount, final_capital, final_params, candleSafe, withoutSafe)
+    final_result = list(final_results)
+    static_capital = bt_capital
+    for i in final_result:
+        print("capital: ", i)
+        bt_capital += bt_capital*((i-static_capital)/static_capital)
+
+    #check.wait()
+
+    backtest_mt.q.put(final_result)
+    end = time.time()
+    print("Thread time: ", end-start)
+    return(final_result)
+
+def f_init(q):
+    backtest_mt.q = q
 
 if __name__ == '__main__': 
-    with Pool(None) as pool:
-        start = time.time()
+    q = Queue()
+    with Pool(None, f_init, [q]) as pool:
         print("Running backtest for all given params with multiprocessing...")
         #capital_data = list(zip(*result))[0]
-        res = pool.imap_unordered(backtest_strategy, params_to_try)
-        print(list(res))
-        print("Backtest completed for all given params, and all generated data was saved :)")
+        start = time.time()
+        res = pool.imap_unordered(backtest_mt, params_to_try)
+        pool.close()
+        pool.join()
+
+        for i in range(len(params_to_try)):
+            print("queue:", q.get())
+        #check.release()
         end = time.time()
-        print(end-start)
+        print("Backtest time: ", end-start)
+        print("Backtest completed for all given params, and all generated data was saved :)")
+
 
 #print("THE BEST SIGNALS ARE:", max(param_data, key=lambda x:x[1]))

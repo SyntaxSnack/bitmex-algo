@@ -4,6 +4,7 @@ import redisCommands as rd
 import pandas as pd
 import threading
 import concurrent.futures
+from datetime import datetime
 
 class ExecutablePrice:
     bids: list
