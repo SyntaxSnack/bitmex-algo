@@ -5,6 +5,11 @@ __pycache__
 bitmex_ws/__pycache__
 util/__pycache__
 .DS_Store
+backtest.c
+getSignals.c
+indicators.c
+technicals.c
+tradeLogic.c
 
 #exclude data in all data directories
 BacktestData/XBTUSD/*
