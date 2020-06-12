@@ -1,42 +1,45 @@
+#!python
+#cython: language_level=3
 import pandas as pd
 import numpy as np
-from collections import Counter
-from enum import Enum
-import ta
-from ta.utils import dropna
-import asyncio
-import sys
-from datetime import datetime
-from pathlib import Path
-from pathos.multiprocessing import ProcessingPool as Pool
-#import tracemalloc
-import time
-from pathos.threading import ThreadPool
+#from enum import Enum
 import itertools
-from functools import partial
+import time
 from datetime import datetime
-from indicators import Signal, candle_df
+from pathos.threading import ThreadPool
+from multiprocessing import Pool, Queue #, Process, Condition
+#import threading
+#import os
+#import tracemalloc
+#from functools import partial
+#import matplotlib.pyplot
+#from matplotlib import pyplot as plt
+from datetime import datetime
 import getSignals as getSignals
-import matplotlib.pyplot
-from multiprocessing import Process, Pool
-from matplotlib import pyplot as plt
-import threading
-import os
+from indicators import Signal
 
 #Set data for backtest
-symbol = "XBTUSD"
 candleamount = 14400
+  #Remove this later in favor of running several symbols (pairs) at once
+symbol = 'XBTUSD'
+bt_capital = 1000
 ctime = "1m"
+#Greater percision speeds up the multithreading algorithm
+##It does not reduce accuracy, but if the number is too high, the backtest will say so
+percision = 4
 visualize=False
-candleData = pd.read_csv(symbol + "-" + ctime + "-data.csv", sep=',').drop(columns=['lastSize','turnover','homeNotional','foreignNotional'])
 
-def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynamic
-    capital=1000
-    atrseries = pd.Series(dtype=np.uint16)
-    signals = pd.DataFrame()
-    keltner_signals = pd.Series(dtype=object)
-    engulf_signals = pd.Series(dtype=object)
-    #print(signal_params)
+#multiprocessing condition
+#check = Condition()
+
+def generateTargetPrice(entry_price, trade):
+    if(trade=='short'):
+        return entry_price - entry_price *.02
+    if(trade=='long'):
+        return entry_price + entry_price  *.02
+
+def backtest_strategy(candleamount, capital, signal_params, candles, safe): #trade= long, short, dynamic
+    symbol = signal_params['symbol']
     kperiod = signal_params['kperiod']
     ksma = signal_params['ksma']
     atrperiod = signal_params['atrperiod']
@@ -44,46 +47,39 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
     ignoredoji = signal_params['ignoredoji']
     engulfthreshold = signal_params['engulfthreshold']
     posmult = signal_params['posmult']
-    candle_data = candleData.tail(candleamount)
+    stopType= signal_params['stoptype']
 
-    if (signal_params['keltner'] == True) and (signal_params['engulf'] == True):
-        engulf_signals = pd.read_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(signal_params['engulfthreshold']) + '_ignoredoji' + str(signal_params['ignoredoji']) + '.csv', sep=',')
-        keltner_signals = pd.read_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(signal_params['kperiod']) + '_sma' + str(signal_params['ksma']) + '.csv', sep=',')
-        signals = pd.concat([engulf_signals, keltner_signals], axis=1)
-        signals.columns = ["E", "K"]    
-        signals['S'] = np.where((signals['E'] == signals['K']), Signal(0), signals['E'])
-    elif(signal_params['keltner'] == True):
-        keltner_signals = pd.read_csv('IndicatorData//' + symbol + '//Keltner//' + "SIGNALS_kp" + str(signal_params['kperiod']) + '_sma' + str(signal_params['ksma']) + '.csv', sep=',')
-        signals['S'] = keltner_signals
-        #print("KELTNER SIGNALS", signals.groupby('keltner'))
-    elif(signal_params['engulf'] == True):
-        engulf_signals = pd.read_csv('IndicatorData//' + symbol + '//Engulfing//' + "SIGNALS_t" + str(signal_params['engulfthreshold']) + '_ignoredoji' + str(signal_params['ignoredoji']) + '.csv', sep=',')
-        signals['S'] = engulf_signals
-    atrseries = pd.read_csv('IndicatorData//' + symbol + "//ATR//" + "p" + str(atrperiod) + '.csv', sep=',')
+    candle_data = candles
+    #replace later with a less memory-heavy solution for finding candle indices without index reset
+    old_candle_data = candle_data
 
-    signal_len = len(signals.loc[0])
     candle_data = candle_data.reset_index(drop=True)
-    candle_data = pd.DataFrame.join(candle_data, atrseries)
-    candle_data = pd.DataFrame.join(candle_data, signals['S'])   #COMBINE SIGNALS AND CANDLE DATA
-    #print("CANDLE DATA")
-    #print(candle_data)
-    
     capital_data = pd.DataFrame(columns= ['timestamp', 'capital'])
+
     entry_price = 0
     profit = 0
-    #currentTime = datetime.now().strftime("%Y%m%d-%H%M")
-    #signals.to_csv('BacktestData//Signals//' + currentTime + '.csv')
     position_size = .1
     position_amount = 0
-    static_position_amount = capital * position_size
+    static_position_amount = capital * .1
     fee = position_amount * 0.00075
     have_pos = False
     stop_loss = .1
     stop=False
     stopPrice=0
-    stopType="atr"
+    #currentTime = datetime.now().strftime("%Y%m%d-%H%M")
+    short_b = False
+    long_b = False
+    opposite_b = False
 
     for idx, data in candle_data.iterrows():
+        #for safe point debugging
+        #if(safe == False and ((data[-signal_len:]['S'] != "Signal.SELL") and (data[-signal_len:]['S'] != "Signal.BUY"))):
+        #    print(idx)
+        #    print("NONE")
+        #    return([True, 1000000000])
+        #print("got here")
+        currentpoint = list(old_candle_data.index)[idx]
+
         #We do not have ATR data at the start of back-test (unless we look further back, which will not improve our accuracy by much)
             #So, if we do not have ATR (w/ fillna it makes it 0), we set dummy data for the ATR
         if(data['atr']==0):
@@ -103,7 +99,12 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                 print("Price:", data['open'])
                 print("ATR stop threshold: ", data['atr']*50)
                 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        if(data[-signal_len:]['S'] == "Signal.BUY") or (stop and position_amount < 0):
+        if(data['S'] == "Signal.BUY") or (stop and position_amount < 0):
+            if(data['S'] == "Signal.BUY"):
+                long_b = True
+                if(short_b):
+                    opposite_b = True
+                short_b = False
             if((short and have_pos) and (position_amount < 0)):
             #short is only a constant parameter to determine if we are shorting at all
             #position_amount determines if we are currently short or long
@@ -115,7 +116,6 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                 print("Exit price:", data['open'])
                 print("Turnover:", profit - fee*2)
                 print("############################")
-                #100 * (200-400/400) = 100
                 entry_price = 0
                 have_pos = False
                 stop = False
@@ -129,16 +129,23 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                     position_amount = static_position_amount
                 else:
                     position_amount += posmult*static_position_amount #we only get up to this point if our position is positive
+                #target_price = generateTargetPrice(entry_price, 'long')
                 fee = position_amount*0.00075
                 capital -= fee
                 print("######## LONG ENTRY ########")
                 print("Entry price:", entry_price)
+                #print("Target price:", target_price)
                 print("Stop loss:", stopPrice)
                 print("Current position:", position_amount)
                 print("############################")
                 have_pos = True
 
-        elif(data[-signal_len:]['S'] == "Signal.SELL") or (stop and position_amount > 0):
+        elif(data['S'] == "Signal.SELL") or (stop and position_amount > 0):
+            if(data['S'] == "Signal.SELL"):
+                short_b = True
+                if(long_b):
+                    opposite_b = True
+                long_b = False
             if((long and have_pos) and (position_amount > 0)):
                 profit = position_amount * ((data['open'] - entry_price)/entry_price)
                 capital += profit
@@ -148,7 +155,6 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                 print("Exit price:", data['open'])
                 print("Turnover:", profit - fee*2)
                 print("############################")
-                #100 * (200-400/400) = 100
                 entry_price = 0
                 have_pos = False
                 stop = False
@@ -162,14 +168,22 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
                     position_amount = -1*static_position_amount
                 else:
                     position_amount -= posmult*static_position_amount #we only get up to this point if our position is negative
+                #target_price = generateTargetPrice(entry_price, 'short')
                 print("####### SHORT ENTRY ########")
                 print("Entry price:", entry_price)
+                #print("Target Price:", target_price)
                 print("Stop loss:", stopPrice)
                 print("Current position:", position_amount)
                 print("############################")
                 have_pos = True
                 fee = abs(position_amount*0.00075)
                 capital -= fee
+        if(safe):
+            if opposite_b: return(currentpoint+1)
+            cRange = candle_data.index[-1] - candle_data.index[0] 
+            if (idx > (candle_data.index[0] + cRange/2)):
+                return(-1)
+        
         capital_data.loc[idx] = [data['timestamp'], capital]
 
     currentTime = datetime.now().strftime("%Y%m%d-%H%M")
@@ -203,11 +217,12 @@ def backtest_strategy(signal_params, symbol=symbol): #trade= long, short, dynami
     f.write('\n---------------------------\n')
     #capital_data.to_csv('Plotting//' + symbol + '//' + currentTime + '.csv')
 
-    if visualize:
-        visualize_trades(capital_data)
+    #if visualize:
+    #    visualize_trades(capital_data)
 
     print("Backtest for given param completed, and results were saved to Backtest/" + symbol)
-    return(capital)
+    print("CAPITAL: ", capital)
+    return([True, capital])
 
 def genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v):
     print('genIndicators')
@@ -245,6 +260,8 @@ def saveIndicators(combinations, candleamount=candleamount):
     return("indprocess done")
 
 def visualize_trades(df):
+    pass
+    '''
     list_of_datetimes = df['timestamp'].tolist()
     list_of_datetimes = [t[:-6] for t in list_of_datetimes]
     l = [datetime.strptime(t, "%Y-%m-%d %H:%M:%S") for t in list_of_datetimes]
@@ -252,79 +269,180 @@ def visualize_trades(df):
     dates = matplotlib.dates.date2num(l)
     matplotlib.pyplot.plot_date(dates, values,'-b')
     plt.xticks(rotation=90)
-    plt.savefig('Plotting//'+ symbol + '//' + str(time.time()) + "_" + current_thread().name + '.png')
+    plt.savefig('Plotting//'+ symbol + '//' + str(time.time()) + "_" + 'current_thread().name' + '.png')
     print("Visualization generated, and saved to Plotting/" + symbol)
     return("visprocess done")
+    '''
 
 ######## PARAMETERS TO RUN BACKTEST ON ########
 #ATR
-atrperiod_v = [5, 50]
+atrperiod_v = [5]
 #KELTNER
-kperiod_v = [15]
+kperiod_v = [15, 30]
 ksma_v = [True]
 keltner_v = [True]
 #ENGULFING CANDLES
 engulf_v = [True]
 engulfthreshold_v = [1]
-ignoredoji_v = [True,False]
+ignoredoji_v = [True]
 #TRADE TYPES
 trade_v = ['dynamic']
 #POSITION SIZES
 posmult_v = [2, 4, 8]
-params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v]
+stoptype_v = ['atr']
+symbol_v = ['XBTUSD']
+params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v, stoptype_v, symbol_v]
 ################################################
 
 combinations = list(itertools.product(*params))
-params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] , 'engulf':l[4], 'ignoredoji':l[5], 'trade':l[6],  'posmult':l[7], 'engulfthreshold': l[8]} for l in combinations]
+params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] , 'engulf':l[4], 'ignoredoji':l[5], 'trade':l[6],  'posmult':l[7], 'engulfthreshold': l[8], 'stoptype': l[9], 'symbol': l[10]} for l in combinations]
 #params_to_try = [{'keltner': True, 'engulf': True, 'kperiod': 30, 'ksma': True, 'atrperiod': 5, 'ignoredoji': True, 'engulfthreshold': 1, 'trade': 'dynamic', 'posmult': 32}]
 
-#example of generating all indicators for defined params for a specific length of time
+#example of generating all indicators for defined params for a **ADD THIS LATER: specific length of time***
     #they go into Indicators/<XBTUSD|ETHUSD> folder, saved a csv by their parameters
         #ATRs = p<period>.csv
         #Keltners = kp<kperiod>_sma<ksma=True|False>.csv
 
-check = threading.Condition()
+#update later to allow backtesting different pairs simultaneously
+candleData = pd.read_csv(symbol_v[0] + "-" + ctime + "-data.csv", sep=',').drop(columns=['lastSize','turnover','homeNotional','foreignNotional'])
 
+find_su = False #debugging feature for backtest optimization
 def backtest_mt(params):
+    global bt_capital
     saveIndicators(combinations, candleamount=candleamount)
-    ###create multithread pool w/ number of threads being number of combinations###
-    #pool.uimap(lambda signal_params, : saveIndicators(combinations=combinations), params_to_try)
-    #results = pool.uimap(lambda signal_params, : backtest_strategy(candleamount, signal_params=signal_params), params_to_try)
-    #result = list(results)
 
-    #thread_count = percision
-    #candleSplice = candleData.tail(candleamount)
-    #candleSplit = list(np.array_split(candleSplice, thread_count))
+    candleSplice = candleData.tail(candleamount)
 
-    #params = np.repeat(params, len(params))
-    #rcapital = np.repeat(capital, len(candleSplit))
-    #candleamount = np.repeat(candleamount, len(candleSplit))
+    atrseries = pd.Series(dtype=np.uint16)
+    keltner_signals = pd.Series(dtype=object)
+    engulf_signals = pd.Series(dtype=object)
+    signals = pd.Series(dtype=object)
+    atrperiod = params['atrperiod']
+    #candleSplice = candleSplice.reset_index(drop=True)
 
-    #print("thread amount:", thread_count)
-    #pool = ThreadPool(thread_count)
-    #results = backtest_strategy(candleamount, capital, params, candles=candleData)
-    #start = time.time()
-    #results = pool.uimap(backtest_strategy, candleamount, rcapital, params, candleSplit)
-    #result = list(results)
-    #scapital = capital
-    #for i in result:
-    #    capital = capital + capital*((i-scapital)/scapital)
-    #end = time.time()
-    #return(end-start)
-    #return(capital)
-    #param_data = list(zip(*result))[1]
+    if (params['keltner'] == True) and (params['engulf'] == True):
+        engulf_signals = pd.read_csv('IndicatorData//' + params['symbol'] + '//Engulfing//' + "SIGNALS_t" + str(params['engulfthreshold']) + '_ignoredoji' + str(params['ignoredoji']) + '.csv', sep=',')
+        keltner_signals = pd.read_csv('IndicatorData//' + params['symbol'] + '//Keltner//' + "SIGNALS_kp" + str(params['kperiod']) + '_sma' + str(params['ksma']) + '.csv', sep=',')
+        signals = pd.concat([engulf_signals, keltner_signals], axis=1)
+        signals.columns = ["E", "K"]    
+        signals['S'] = np.where((signals['E'] == signals['K']), Signal(0), signals['E'])
+    elif(params['keltner'] == True):
+        keltner_signals = pd.read_csv('IndicatorData//' + params['symbol'] + '//Keltner//' + "SIGNALS_kp" + str(params['kperiod']) + '_sma' + str(params['ksma']) + '.csv', sep=',')
+        signals['S'] = keltner_signals
+    elif(params['engulf'] == True):
+        engulf_signals = pd.read_csv('IndicatorData//' + params['symbol'] + '//Engulfing//' + "SIGNALS_t" + str(params['engulfthreshold']) + '_ignoredoji' + str(params['ignoredoji']) + '.csv', sep=',')
+        signals['S'] = engulf_signals
+    #signals.to_csv('BacktestData//Signals//' + currentTime + '.csv')
+    atrseries = pd.read_csv('IndicatorData//' + params['symbol'] + "//ATR//" + "p" + str(atrperiod) + '.csv', sep=',')
+    copyIndex = candleSplice.index
+    candleSplice = candleSplice.reset_index(drop=True)
+    #candleSplice.merge(atrseries, left_index=True)
+    #candleSplice.merge(signals['S'], right_on='S', left_index=True)
+    candleSplice = pd.DataFrame.join(candleSplice, atrseries)
+    candleSplice = pd.DataFrame.join(candleSplice, signals['S'])   #COMBINE SIGNALS AND CANDLE DATA
+    candleSplice.index = copyIndex
 
-percision=1
+    if(percision != 1):
+        candleSplit = list(np.array_split(candleSplice, percision))
+
+        #generate parameters for multithreading
+        safe_length = len(candleSplit)
+        safe_candleamount = np.repeat(candleamount, safe_length).tolist()
+        safe_capital = np.repeat(bt_capital, safe_length).tolist()
+        safe_params = np.repeat(params, safe_length).tolist()
+
+        withSafe = np.repeat(True, safe_length).tolist()
+
+        print("safe thread amount:", safe_length)
+        #create multithread pool
+        start = time.time()
+        pool = ThreadPool(safe_length)
+
+        #run initial chunks multithreaded to find safepoints
+        safe_results = pool.uimap(backtest_strategy, safe_candleamount, safe_capital, safe_params, candleSplit, withSafe)
+        
+        pool.close()    #Compute anything we need to while threads are running
+        candleSafe = []
+        final_length = safe_length + 1
+        withoutSafe = np.repeat(False, final_length).tolist()
+        firstStart = candleSplice.index[0]
+        lastDistanceSafe = None
+        final_candleamount = np.repeat(candleamount, final_length).tolist()
+        final_capital = np.repeat(bt_capital, final_length).tolist()
+        final_params = np.repeat(params, final_length).tolist()
+        static_capital = bt_capital
+
+        safePoints = list(safe_results) ######################################
+        pool.join()
+
+        for i in safePoints:
+            if i == -1:
+                backtest_mt.q.put('Not all safe points found for given percision. Reduce percision, or increase timeframe')
+                return
+        safePoints = sorted(safePoints)
+
+        if find_su:
+            su = []
+            for i in safePoints:
+                su.extend(i-firstStart)
+            return(su)
+
+        print("safe points:", safePoints)
+        for i in safePoints:
+            ia = i - firstStart
+            if safePoints.index(i) != 0:
+                #time.sleep(10)
+                candleSafe.append(candleSplice.iloc[lastDistanceSafe:ia+1])
+            else:
+                candleSafe.append(candleSplice.iloc[:ia+1])
+            lastDistanceSafe = ia
+        candleSafe.append(candleSplice.iloc[lastDistanceSafe:])
+
+        candleSafe = list(candleSafe)
+
+        print("final thread amount:", final_length)
+        fpool = ThreadPool(final_length)
+        final_results = fpool.uimap(backtest_strategy, final_candleamount, final_capital, final_params, candleSafe, withoutSafe)
+        fpool.close()
+        final_result = list(final_results)
+        fpool.join()
+
+        for i in final_result:
+            print("capital: ", i[1])
+            #for non-static position size:
+            ##bt_capital += bt_capital*((i[1]-static_capital)/static_capital)
+            bt_capital += i[1]-static_capital
+    else:
+        #run chunks spliced by safepoints multithreaded to retrieve fully accurate results
+        final_results = backtest_strategy(candleamount, bt_capital, params, candleSplice, False)
+        bt_capital = list(final_results)
+
+    backtest_mt.q.put(bt_capital)
+    end = time.time()
+    print("Thread time: ", end-start)
+    return(bt_capital)
+
+#Monkey patch for multiprocessing queues (for messages, like results)
+def f_init(q):
+    backtest_mt.q = q
 
 if __name__ == '__main__': 
-    with Pool(None) as pool:
-        start = time.time()
+    q = Queue()
+    with Pool(None, f_init, [q]) as pool:
         print("Running backtest for all given params with multiprocessing...")
-        #capital_data = list(zip(*result))[0]
-        res = pool.imap_unordered(backtest_strategy, params_to_try)
-        print(list(res))
-        print("Backtest completed for all given params, and all generated data was saved :)")
+        start = time.time()
+        res = pool.imap_unordered(backtest_mt, params_to_try)
+        pool.close()
+        pool.join()
         end = time.time()
-        print(end-start)
+        print("Backtest time: ", end-start)
+        print("Backtest completed for all given params, and all generated data was saved :)")
+        for i in range(len(params_to_try)):
+            print("queue:", q.get())
+        #check.release()
+        #capital_data = list(zip(*result))[0]
 
+#### MULTIPROCESSING DOES NOT RETURN CODE ERRORS. USE THIS FOR DEBUGGING ####
+#backtest_mt(params_to_try[0])
 #print("THE BEST SIGNALS ARE:", max(param_data, key=lambda x:x[1]))
+#############################################################################
