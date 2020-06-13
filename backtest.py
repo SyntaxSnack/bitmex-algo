@@ -1,5 +1,3 @@
-#!python
-#cython: language_level=3
 import pandas as pd
 import numpy as np
 #from enum import Enum
@@ -17,16 +15,17 @@ from multiprocessing import Pool, Queue #, Process, Condition
 from datetime import datetime
 import getSignals as getSignals
 from indicators import Signal
+from statistics import mean
 
 #Set data for backtest
-candleamount = 14400
+candleamount = 144000
   #Remove this later in favor of running several symbols (pairs) at once
 symbol = 'XBTUSD'
 bt_capital = 1000
 ctime = "1m"
 #Greater percision speeds up the multithreading algorithm
 ##It does not reduce accuracy, but if the number is too high, the backtest will say so
-percision = 4
+percision = 18
 visualize=False
 
 #multiprocessing condition
@@ -278,7 +277,7 @@ def visualize_trades(df):
 #ATR
 atrperiod_v = [5]
 #KELTNER
-kperiod_v = [15, 30]
+kperiod_v = [15]#, 30]
 ksma_v = [True]
 keltner_v = [True]
 #ENGULFING CANDLES
@@ -288,7 +287,7 @@ ignoredoji_v = [True]
 #TRADE TYPES
 trade_v = ['dynamic']
 #POSITION SIZES
-posmult_v = [2, 4, 8]
+posmult_v = [2]#, 4, 8]
 stoptype_v = ['atr']
 symbol_v = ['XBTUSD']
 params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v, stoptype_v, symbol_v]
@@ -305,10 +304,11 @@ params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] 
 
 #update later to allow backtesting different pairs simultaneously
 candleData = pd.read_csv(symbol_v[0] + "-" + ctime + "-data.csv", sep=',').drop(columns=['lastSize','turnover','homeNotional','foreignNotional'])
-
-find_su = False #debugging feature for backtest optimization
+xbtusd_su = 1100
+find_su = True #debugging feature for backtest optimization
 def backtest_mt(params):
     global bt_capital
+    global su
     saveIndicators(combinations, candleamount=candleamount)
 
     candleSplice = candleData.tail(candleamount)
@@ -343,8 +343,27 @@ def backtest_mt(params):
     candleSplice.index = copyIndex
 
     if(percision != 1):
-        candleSplit = list(np.array_split(candleSplice, percision))
+        isafe = []
+        candleSplit = []
+        for i in range(percision):
+            isafe.append((i+1)*(1-(percision*su/percision)+i*su))
 
+        candleSplit = list(np.array_split(candleSplice, percision))
+        candleSplit = list(candleSplit)
+        '''
+        print("initial splicing points:", isafe)
+        for i in isafe:
+            ia = i - firstStart
+            if safePoints.index(i) != 0:
+                candleSplit.append(candleSplice.iloc[lastDistanceSafe:ia+1])
+        else:
+            candleSplit.append(candleSplice.iloc[:ia+1])
+            lastDistanceSafe = ia
+            candleSplit.append(candleSplice.iloc[lastDistanceSafe:])
+
+        print(candleSplit)
+        time.sleep(1000)
+        '''
         #generate parameters for multithreading
         safe_length = len(candleSplit)
         safe_candleamount = np.repeat(candleamount, safe_length).tolist()
@@ -356,6 +375,7 @@ def backtest_mt(params):
         print("safe thread amount:", safe_length)
         #create multithread pool
         start = time.time()
+        print(candleSplit)
         pool = ThreadPool(safe_length)
 
         #run initial chunks multithreaded to find safepoints
@@ -383,15 +403,18 @@ def backtest_mt(params):
 
         if find_su:
             su = []
-            for i in safePoints:
-                su.extend(i-firstStart)
+            for i, point in enumerate(safePoints):
+                su.append(point - candleSplit[i].index[0])
+            suAvg = mean(su)
+                #only works on evenly spliced chunks
+            chunkLength = len(candleSplit[0])
+            backtest_mt.q.put(["su average:", suAvg, ' / ', chunkLength])
             return(su)
 
         print("safe points:", safePoints)
         for i in safePoints:
             ia = i - firstStart
             if safePoints.index(i) != 0:
-                #time.sleep(10)
                 candleSafe.append(candleSplice.iloc[lastDistanceSafe:ia+1])
             else:
                 candleSafe.append(candleSplice.iloc[:ia+1])
@@ -425,6 +448,7 @@ def backtest_mt(params):
 #Monkey patch for multiprocessing queues (for messages, like results)
 def f_init(q):
     backtest_mt.q = q
+
 
 if __name__ == '__main__': 
     q = Queue()
