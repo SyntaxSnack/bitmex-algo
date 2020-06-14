@@ -10,6 +10,7 @@ getSignals.c
 indicators.c
 technicals.c
 tradeLogic.c
+.vs
 
 #exclude data in all data directories
 BacktestData/XBTUSD/*

@@ -25,8 +25,59 @@ bt_capital = 1000
 ctime = "1m"
 #Greater percision speeds up the multithreading algorithm
 ##It does not reduce accuracy, but if the number is too high, the backtest will say so
-percision = 18
+percision = 20
 visualize=False
+
+
+######## PARAMETERS TO RUN BACKTEST ON ########
+#ATR
+atrperiod_v = [5]
+#KELTNER
+kperiod_v = [15, 30, 50]
+ksma_v = [True, False]
+keltner_v = [True]
+#ENGULFING CANDLES
+engulf_v = [True]
+engulfthreshold_v = [1]
+ignoredoji_v = [True]
+#TRADE TYPES
+trade_v = ['dynamic']
+#POSITION SIZES
+posmult_v = [2, 4, 8]
+stoptype_v = ['atr']
+symbol_v = ['XBTUSD']
+params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v, stoptype_v, symbol_v]
+################################################
+
+'''
+######## PARAMETERS TO RUN BACKTEST ON ########
+#ATR
+atrperiod_v = [5]
+#KELTNER
+kperiod_v = [15]
+ksma_v = [True]
+keltner_v = [True]
+#ENGULFING CANDLES
+engulf_v = [True]
+engulfthreshold_v = [1]
+ignoredoji_v = [True]
+#TRADE TYPES
+trade_v = ['dynamic']
+#POSITION SIZES
+posmult_v = [2]
+stoptype_v = ['atr']
+symbol_v = ['XBTUSD']
+params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v, stoptype_v, symbol_v]
+################################################
+'''
+combinations = list(itertools.product(*params))
+params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] , 'engulf':l[4], 'ignoredoji':l[5], 'trade':l[6],  'posmult':l[7], 'engulfthreshold': l[8], 'stoptype': l[9], 'symbol': l[10]} for l in combinations]
+#params_to_try = [{'keltner': True, 'engulf': True, 'kperiod': 30, 'ksma': True, 'atrperiod': 5, 'ignoredoji': True, 'engulfthreshold': 1, 'trade': 'dynamic', 'posmult': 32}]
+
+#example of generating all indicators for defined params for a **ADD THIS LATER: specific length of time***
+    #they go into Indicators/<XBTUSD|ETHUSD> folder, saved a csv by their parameters
+        #ATRs = p<period>.csv
+        #Keltners = kp<kperiod>_sma<ksma=True|False>.csv
 
 #multiprocessing condition
 #check = Condition()
@@ -179,8 +230,10 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
                 capital -= fee
         if(safe):
             if opposite_b: return(currentpoint+1)
-            cRange = candle_data.index[-1] - candle_data.index[0] 
-            if (idx > (candle_data.index[0] + cRange/2)):
+            #cRange = candle_data.index[-1] - candle_data.index[0] 
+            if ((idx > candleamount/2) or (idx == candle_data.index[-1])):
+                #print(candle_data)
+                #print(len(candle_data)/2)
                 return(-1)
         
         capital_data.loc[idx] = [data['timestamp'], capital]
@@ -248,7 +301,7 @@ def genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v):
     getSignals.saveEngulfingSignals(candleData, candleamount, params=list(engulf_pairs))
     getSignals.saveATR(candleData, candleamount, params=atr_pairs)
 
-def saveIndicators(combinations, candleamount=candleamount):
+def saveIndicators(combinations=combinations, candleamount=candleamount):
     atrperiod_v = [l[0] for l in combinations]
     kperiod_v = [l[1] for l in combinations]
     ksma_v = [l[2] for l in combinations]
@@ -273,43 +326,15 @@ def visualize_trades(df):
     return("visprocess done")
     '''
 
-######## PARAMETERS TO RUN BACKTEST ON ########
-#ATR
-atrperiod_v = [5]
-#KELTNER
-kperiod_v = [15]#, 30]
-ksma_v = [True]
-keltner_v = [True]
-#ENGULFING CANDLES
-engulf_v = [True]
-engulfthreshold_v = [1]
-ignoredoji_v = [True]
-#TRADE TYPES
-trade_v = ['dynamic']
-#POSITION SIZES
-posmult_v = [2]#, 4, 8]
-stoptype_v = ['atr']
-symbol_v = ['XBTUSD']
-params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v, stoptype_v, symbol_v]
-################################################
-
-combinations = list(itertools.product(*params))
-params_to_try = [{'atrperiod':l[0], 'kperiod':l[1], 'ksma':l[2], 'keltner':l[3] , 'engulf':l[4], 'ignoredoji':l[5], 'trade':l[6],  'posmult':l[7], 'engulfthreshold': l[8], 'stoptype': l[9], 'symbol': l[10]} for l in combinations]
-#params_to_try = [{'keltner': True, 'engulf': True, 'kperiod': 30, 'ksma': True, 'atrperiod': 5, 'ignoredoji': True, 'engulfthreshold': 1, 'trade': 'dynamic', 'posmult': 32}]
-
-#example of generating all indicators for defined params for a **ADD THIS LATER: specific length of time***
-    #they go into Indicators/<XBTUSD|ETHUSD> folder, saved a csv by their parameters
-        #ATRs = p<period>.csv
-        #Keltners = kp<kperiod>_sma<ksma=True|False>.csv
-
 #update later to allow backtesting different pairs simultaneously
 candleData = pd.read_csv(symbol_v[0] + "-" + ctime + "-data.csv", sep=',').drop(columns=['lastSize','turnover','homeNotional','foreignNotional'])
-xbtusd_su = 1100
-find_su = True #debugging feature for backtest optimization
+xbtusd_su = 1111
+ethusd_su = 1111
+find_su = False #debugging feature for backtest optimization
 def backtest_mt(params):
     global bt_capital
-    global su
-    saveIndicators(combinations, candleamount=candleamount)
+    su = None
+    saveIndicators(candleamount=candleamount)
 
     candleSplice = candleData.tail(candleamount)
 
@@ -345,25 +370,33 @@ def backtest_mt(params):
     if(percision != 1):
         isafe = []
         candleSplit = []
-        for i in range(percision):
-            isafe.append((i+1)*(1-(percision*su/percision)+i*su))
-
-        candleSplit = list(np.array_split(candleSplice, percision))
-        candleSplit = list(candleSplit)
-        '''
-        print("initial splicing points:", isafe)
+        initialLength = len(candleSplice)
+        firstStart = candleSplice.index[0]
+        lastDistanceSafe = None
+        if params['symbol'] == 'XBTUSD':
+            su = xbtusd_su
+        elif params['symbol'] == 'ETHUSD':
+            su = ethusd_su
+        for i in range(percision-1):
+            isafe.append((i+1)*((initialLength-(percision)*su)/(percision))+i*su)
+        print(isafe)
+        #candleSplit = list(np.array_split(candleSplice, percision))
+        #candleSplit = list(candleSplit)
+        print("initial splicing point length:", len(isafe))
         for i in isafe:
-            ia = i - firstStart
-            if safePoints.index(i) != 0:
-                candleSplit.append(candleSplice.iloc[lastDistanceSafe:ia+1])
-        else:
-            candleSplit.append(candleSplice.iloc[:ia+1])
-            lastDistanceSafe = ia
-            candleSplit.append(candleSplice.iloc[lastDistanceSafe:])
+            ia = int(i)
+            if isafe.index(i) != 0:
+                candleSplit.append(candleSplice.iloc[int(isafe[isafe.index(i)-1]):ia+1])
+                lastDistanceSafe = ia
+                #print("lds", lastDistanceSafe)
+            else:
+                candleSplit.append(candleSplice.iloc[:ia+1])
+                lastDistanceSafe = ia
+                #print("lds", lastDistanceSafe)
+        candleSplit.append(candleSplice.iloc[lastDistanceSafe:])
 
-        print(candleSplit)
-        time.sleep(1000)
-        '''
+        #print(candleSplit)
+        #time.sleep(100)
         #generate parameters for multithreading
         safe_length = len(candleSplit)
         safe_candleamount = np.repeat(candleamount, safe_length).tolist()
@@ -375,7 +408,8 @@ def backtest_mt(params):
         print("safe thread amount:", safe_length)
         #create multithread pool
         start = time.time()
-        print(candleSplit)
+        #print(candleSplit)
+        #time.sleep(1000)
         pool = ThreadPool(safe_length)
 
         #run initial chunks multithreaded to find safepoints
@@ -383,16 +417,15 @@ def backtest_mt(params):
         
         pool.close()    #Compute anything we need to while threads are running
         candleSafe = []
-        final_length = safe_length + 1
+        final_length = safe_length + 2
         withoutSafe = np.repeat(False, final_length).tolist()
-        firstStart = candleSplice.index[0]
-        lastDistanceSafe = None
         final_candleamount = np.repeat(candleamount, final_length).tolist()
         final_capital = np.repeat(bt_capital, final_length).tolist()
         final_params = np.repeat(params, final_length).tolist()
         static_capital = bt_capital
 
         safePoints = list(safe_results) ######################################
+        print(safePoints)
         pool.join()
 
         for i in safePoints:
@@ -424,6 +457,8 @@ def backtest_mt(params):
         candleSafe = list(candleSafe)
 
         print("final thread amount:", final_length)
+        #print(candleSafe)
+        #time.sleep(10000)
         fpool = ThreadPool(final_length)
         final_results = fpool.uimap(backtest_strategy, final_candleamount, final_capital, final_params, candleSafe, withoutSafe)
         fpool.close()
@@ -436,6 +471,7 @@ def backtest_mt(params):
             ##bt_capital += bt_capital*((i[1]-static_capital)/static_capital)
             bt_capital += i[1]-static_capital
     else:
+        print('got here')
         #run chunks spliced by safepoints multithreaded to retrieve fully accurate results
         final_results = backtest_strategy(candleamount, bt_capital, params, candleSplice, False)
         bt_capital = list(final_results)
@@ -452,7 +488,7 @@ def f_init(q):
 
 if __name__ == '__main__': 
     q = Queue()
-    with Pool(None, f_init, [q]) as pool:
+    with Pool(len(params_to_try), f_init, [q]) as pool:
         print("Running backtest for all given params with multiprocessing...")
         start = time.time()
         res = pool.imap_unordered(backtest_mt, params_to_try)
