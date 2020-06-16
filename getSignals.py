@@ -25,11 +25,10 @@ t_candleamount = None
 
 def saveATR(candles, candleamount, params=[], fillna=True, symbol='XBTUSD'):
     for i in params:
-        if path.exists('IndicatorData//' + t_symbol + '//ATR//' + "p" + str(i) + '.csv'):
-            return 
-        df = ind.atrseries(candles, candleamount, i)
-        print(df)
-        df.to_csv('IndicatorData//' + symbol + '//ATR//' + "p" + str(i) + ".csv", mode='w')
+        if path.exists('IndicatorData//' + t_symbol + '//ATR//' + "p" + str(i) + '.csv') == False:
+            df = ind.atrseries(candles, candleamount, i)
+            print(df)
+            df.to_csv('IndicatorData//' + symbol + '//ATR//' + "p" + str(i) + ".csv", mode='w')
     return
 def saveKeltnerBands(candles, candleamount, params=[], symbol='XBTUSD'):
     for i in params:

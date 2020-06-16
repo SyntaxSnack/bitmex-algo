@@ -57,7 +57,7 @@ def engulfingsignals(curr_row, threshold, ignoredoji):
     global prev_row
     if curr_row[6] == prev_row[6]: #candle type stays the same
         signals = Signal.WAIT
-    elif (curr_row[5] * threshold) > (prev_row[5]) and (ignoredoji == False or prev_row[5] > XBTUSD): # candle is opposite direction and larger
+    elif ((curr_row[5] * threshold) > prev_row[5]) and (ignoredoji == False or prev_row[5] >= XBTUSD): # candle is opposite direction and larger
         if curr_row[6] == "red":
             signals = Signal.SELL
         elif curr_row[6] == "green":
@@ -111,7 +111,7 @@ def get_keltner_signals(candles, candleamount = MIN_IN_DAY, kperiod=10, threshol
     kseries["hband"] = indicator_kelt.keltner_channel_hband_indicator()
     kseries["lband"] = indicator_kelt.keltner_channel_lband_indicator()
     signals=[]
-    for i,row in kseries.tail(candleamount).iterrows():
+    for i,row in kseries.iterrows():
         signals.append(keltnersignals(row))
     return signals
 
