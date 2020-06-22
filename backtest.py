@@ -161,10 +161,10 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
         if(entry_price != 0 and stopPrice != 0):
             if(((position_amount > 0) and (data['close'] < stopPrice)) or (((position_amount < 0)) and (data['close'] > stopPrice))):
                 stop = True
-                #print("!!!!!! STOP PRICE HIT !!!!!!", idx, position_amount, have_pos, data['timestamp'], current_thread().name)
-                #print("Price:", data['close'])
-                #print("ATR stop threshold: ", data['atr']*stopmult)
-                #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print("!!!!!! STOP PRICE HIT !!!!!!", idx, position_amount, have_pos, data['timestamp'], current_thread().name)
+                print("Price:", data['close'])
+                print("ATR stop threshold: ", data['atr']*stopmult)
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 if(safe):
                     return(currentpoint)
         ##For multithreading algorithm debugging
@@ -182,15 +182,15 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
                 profit = position_amount * ((data['close'] - entry_price)/entry_price)
                 capital += profit
                 capital -= fee
-                #print("######## SHORT EXIT ########", capital, idx, data['timestamp'], current_thread().name)
+                print("######## SHORT EXIT ########", capital, idx, data['timestamp'], current_thread().name)
                 if (data['close'] < target_price and position_amount < 0):
-                    #print("!!! TARGET PRICE REACHED !!!")
+                    print("!!! TARGET PRICE REACHED !!!")
                     targetHit = True
                 position_amount = 0
-                #print("Exit price:", data['close'])
+                print("Exit price:", data['close'])
                 print("Turnover:", profit - fee*2)
-                #print("Stop, thread: ", stop)
-                #print("############################")
+                print("Stop, thread: ", stop)
+                print("############################")
                 entry_price = 0
                 have_pos = False
                 stop = False
@@ -207,13 +207,13 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
                     position_amount += posmult*static_position_amount #we only get up to this point if our position is positive
                 fee = position_amount*0.00075
                 capital -= fee
-                #print("######## LONG ENTRY ########", capital, idx, data['timestamp'], current_thread().name)
-                #print("Entry price:", entry_price)
-                #print("Target price:", target_price)
-                #print("Stop loss:", stopPrice)
-                #print("Current position:", position_amount)
-                #print("Thread: ", current_thread().name)
-                #print("############################")
+                print("######## LONG ENTRY ########", capital, idx, data['timestamp'], current_thread().name)
+                print("Entry price:", entry_price)
+                print("Target price:", target_price)
+                print("Stop loss:", stopPrice)
+                print("Current position:", position_amount)
+                print("Thread: ", current_thread().name)
+                print("############################")
                 have_pos = True
                 stop = False
             targetHit = False
@@ -227,15 +227,15 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
                 profit = position_amount * ((data['close'] - entry_price)/entry_price)
                 capital += profit
                 capital -= fee
-                #print("######### LONG EXIT ########", capital, idx, data['timestamp'], current_thread().name)
+                print("######### LONG EXIT ########", capital, idx, data['timestamp'], current_thread().name)
                 if (data['close'] > target_price and position_amount > 0):
-                    #print("!!! TARGET PRICE REACHED !!!")
+                    print("!!! TARGET PRICE REACHED !!!")
                     targetHit = True
                 position_amount = 0
-                #print("Exit price:", data['close'])
+                print("Exit price:", data['close'])
                 print("Turnover:", profit - fee*2)
-                #print("Stop, thread: ", stop, current_thread().name)
-                #print("############################")
+                print("Stop, thread: ", stop, current_thread().name)
+                print("############################")
                 entry_price = 0
                 have_pos = False
                 stop = False
@@ -250,13 +250,13 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
                     position_amount = -1*static_position_amount
                 else:
                     position_amount -= posmult*static_position_amount #we only get up to this point if our position is negative
-                #print("####### SHORT ENTRY ########", capital, idx, data['timestamp'], current_thread().name)
-                #print("Entry price:", entry_price)
-                #print("Target Price:", target_price)
-                #print("Stop loss:", stopPrice)
-                #print("Current position:", position_amount)
-                #print("Thread: ", current_thread().name)
-                #print("############################")
+                print("####### SHORT ENTRY ########", capital, idx, data['timestamp'], current_thread().name)
+                print("Entry price:", entry_price)
+                print("Target Price:", target_price)
+                print("Stop loss:", stopPrice)
+                print("Current position:", position_amount)
+                print("Thread: ", current_thread().name)
+                print("############################")
                 have_pos = True
                 fee = abs(position_amount*0.00075)
                 capital -= fee
