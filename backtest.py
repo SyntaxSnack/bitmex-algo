@@ -19,7 +19,7 @@ from statistics import mean
 import math
 
 #Set data for backtest
-candleamount = 3650
+candleamount = 14400
   #Remove this later in favor of running several symbols (pairs) at once
 symbol = 'XBTUSD'
 ctime = "1m"
