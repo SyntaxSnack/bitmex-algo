@@ -19,13 +19,13 @@ from statistics import mean
 import math
 
 #Set data for backtest
-candleamount = 1440*100
+candleamount = 3650
   #Remove this later in favor of running several symbols (pairs) at once
 symbol = 'XBTUSD'
 ctime = "1m"
 #Greater percision speeds up the multithreading algorithm
 ##It does not reduce accuracy, but if the number is too high, the backtest will say so
-percision = 24
+percision = 1
 visualize=False
 capital = 1000
 '''
@@ -51,21 +51,21 @@ params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, tra
 '''
 ######## PARAMETERS TO RUN BACKTEST ON ########
 #ATR
-atrperiod_v = [15]
-stopmult_v = [15]
-tmult_v = [.0125]
+atrperiod_v = [15, 30]
+stopmult_v = [1, 50]
+tmult_v = [1]
 #KELTNER
-kperiod_v = [20]
+kperiod_v = [50, 30]
 ksma_v = [True]
 keltner_v = [True]
 #ENGULFING CANDLES
 engulf_v = [True]
-engulfthreshold_v = [.75]
+engulfthreshold_v = [.5]
 ignoredoji_v = [True]
 #TRADE TYPES
 trade_v = ['dynamic']
 #POSITION SIZES
-posmult_v = [8]
+posmult_v = [4]
 stoptype_v = ['atr']
 symbol_v = ['XBTUSD']
 params = [atrperiod_v, kperiod_v, ksma_v, keltner_v, engulf_v, ignoredoji_v, trade_v, posmult_v, engulfthreshold_v, stoptype_v, stopmult_v, tmult_v, symbol_v]
@@ -108,7 +108,7 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
     old_candle_data = candle_data
 
     candle_data = candle_data.reset_index(drop=True)
-    capital_data = pd.DataFrame(columns= ['timestamp', 'capital'])
+    capital_data = np.empty(shape=(len(candle_data), 2))
 
     entry_price = 0
     profit = 0
@@ -129,6 +129,7 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
     #print(candle_data)
     #time.sleep(1000)
     for idx, data in candle_data.iterrows():
+        start = time.time()
         #print(safe)
         #print(data['timestamp'])
         #for safe point debugging
@@ -142,8 +143,13 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
 
         #We do not have ATR data at the start of back-test (unless we look further back, which will not improve our accuracy by much)
             #So, if we do not have ATR (w/ fillna it makes it 0), we set dummy data for the ATR
+        end = time.time()
+        print("1 time: ", end-start)
+        start = time.time()
         if(data['atr']==0):
             data['atr']=1
+        elif(data['atr'] > 60):
+            data['atr']=60
         long=True
         short=True
         if(trade=="long"):
@@ -182,7 +188,7 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
                     targetHit = True
                 position_amount = 0
                 #print("Exit price:", data['close'])
-                #print("Turnover:", profit - fee*2)
+                print("Turnover:", profit - fee*2)
                 #print("Stop, thread: ", stop)
                 #print("############################")
                 entry_price = 0
@@ -227,7 +233,7 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
                     targetHit = True
                 position_amount = 0
                 #print("Exit price:", data['close'])
-                #print("Turnover:", profit - fee*2)
+                print("Turnover:", profit - fee*2)
                 #print("Stop, thread: ", stop, current_thread().name)
                 #print("############################")
                 entry_price = 0
@@ -266,15 +272,22 @@ def backtest_strategy(candleamount, capital, signal_params, candles, safe): #tra
                 #print("candle index: ", candle_data.index[-1])
                 return(-1)
         lastidx = idx
-        
-        capital_data.loc[idx] = [data['timestamp'], capital]
+        end = time.time()
+        print("2 time: ", end-start)
+        start = time.time()
+        np.append(capital_data, [str(data['timestamp']), capital])
+        end = time.time()
+        print("3 time: ", end-start)
     #capital_data.to_csv('Plotting//' + symbol + '//' + currentTime + '.csv')
 
     #if visualize:
     #    visualize_trades(capital_data)
 
     print("Backtest for given param completed, and results were saved to Backtest/" + symbol, lastidx, current_thread().name)
-    timestamp = capital_data.iloc[-1]['timestamp']
+    print(capital_data)
+    timestamp = capital_data[-1][2]
+    print(timestamp)
+    time.sleep(1000)
     return(timestamp, capital_data)
 
 def genIndicators(candleamount, keltner_params, engulf_params, atrperiod_v):
@@ -553,6 +566,6 @@ if __name__ == '__main__':
 #### MULTIPROCESSING DOES NOT RETURN CODE ERRORS. USE THIS FOR DEBUGGING ####
 #print(len(params_to_try))
 #for i in params_to_try:
-#    backtest_mt(i)
+#backtest_mt(params_to_try[0])
 #print("THE BEST SIGNALS ARE:", max(param_data, key=lambda x:x[1]))
 #############################################################################
